@@ -1,5 +1,96 @@
-# WMBUS Metter runner
-Runs wmbusmetters addon periodically, until it reads all specified meters
+# WMBus Meters Runner
+
+Periodically runs WMBus meters reading with automatic USB device reset functionality.
+
+## Features
+
+- **Automatic USB device detection and reset** - Finds and resets USB devices before reading
+- **Configurable reading interval** - Set how often to read meters (1-1440 minutes)
+- **Flexible device filtering** - Configure which USB devices to reset
+- **Robust error handling** - Comprehensive logging and error recovery
+- **s6-overlay integration** - Proper supervision and graceful shutdown
+
+## Configuration
+
+### Basic Configuration
+
+```yaml
+log_level: info
+reading_interval_minutes: 30
+usb_device_filter: "DVB-T"
+```
+
+### Configuration Options
+
+#### `log_level`
+Controls the level of logging output.
+
+- **Default**: `info`
+- **Options**: `trace`, `debug`, `info`, `notice`, `warning`, `error`, `fatal`
+
+#### `reading_interval_minutes`
+How often to run the WMBus reading cycle.
+
+- **Default**: `30`
+- **Range**: 1-1440 minutes (1 minute to 24 hours)
+
+#### `usb_device_filter`
+Text to match in USB device descriptions for automatic reset.
+
+- **Default**: `"DVB-T"`
+- **Type**: String
+- **Examples**: 
+  - `"DVB-T"` - matches DVB-T devices
+  - `"RTL2838"` - matches specific chip
+  - `"Realtek"` - matches manufacturer
+  - `"USB"` - matches any device with USB in description
+
+## How It Works
+
+1. **Service starts** and reads configuration
+2. **Every configured interval**:
+   - Scans USB devices with `lsusb`
+   - Finds devices matching the filter
+   - Resets matching devices using `usbreset`
+   - Waits for devices to reinitialize
+   - Runs WMBus reading logic
+   - Logs results
+
+## Usage Examples
+
+### RTL-SDR Device
+```yaml
+usb_device_filter: "RTL2838"
+reading_interval_minutes: 15
+```
+
+### Any Realtek Device
+```yaml
+usb_device_filter: "Realtek"
+reading_interval_minutes: 60
+```
+
+### Custom Device
+```yaml
+usb_device_filter: "My Custom Device"
+reading_interval_minutes: 5
+```
+
+## Logs
+
+The addon provides detailed logging with timestamps:
+
+```
+[2025-01-09 10:30:00] INFO: WMBus Meters Runner starting...
+[2025-01-09 10:30:00] INFO: Using USB device filter: 'DVB-T'
+[2025-01-09 10:30:00] INFO: Scanning for USB devices containing 'DVB-T'...
+[2025-01-09 10:30:00] INFO: Found USB device: Realtek DVB-T USB Device at /dev/bus/usb/001/003
+[2025-01-09 10:30:00] INFO: Found 1 device(s) matching 'DVB-T'
+[2025-01-09 10:30:00] INFO: Resetting USB device: /dev/bus/usb/001/003
+[2025-01-09 10:30:00] INFO: USB device /dev/bus/usb/001/003 reset successful
+[2025-01-09 10:30:03] INFO: Starting WMBus meters reading...
+[2025-01-09 10:30:03] INFO: WMBus Meters Runner completed successfully
+```
 
 ## License
 MIT License

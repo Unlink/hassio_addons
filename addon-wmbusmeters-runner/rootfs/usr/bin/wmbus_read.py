@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
 WMBus Meters Runner - Main reading script
-Automatically finds and resets DVB-T devices, then reads WMBus meters
+Automatically finds and resets USB devices, then reads WMBus meters
 """
 
 import subprocess
 import sys
 import re
+import json
+import os
 from datetime import datetime
 
 
@@ -28,10 +30,25 @@ def log_warning(message):
     print(f"[{timestamp}] WARNING: {message}", flush=True)
 
 
+def get_config():
+    """Read addon configuration from /data/options.json"""
+    try:
+        with open('/data/options.json', 'r') as f:
+            config = json.load(f)
+        return config
+    except json.JSONDecodeError as e:
+        log_error(f"Invalid configuration file: {e}")
+        return None
+    except Exception as e:
+        log_error(f"Failed to read configuration: {e}")
+        return None
+
+
 def find_usb_devices():
     """Find all USB devices using lsusb"""
     try:
         device_re = re.compile(r"Bus\s+(?P<bus>\d+)\s+Device\s+(?P<device>\d+).+ID\s(?P<id>\w+:\w+)\s(?P<tag>.+)$", re.I)
+
         df = subprocess.check_output(["lsusb"], universal_newlines=True)
         devices = []
         
@@ -74,25 +91,25 @@ def reset_usb_device(device_path):
         return False
 
 
-def reset_dvb_devices():
-    """Find and reset all DVB-T devices"""
-    log_info("Scanning for DVB-T devices...")
+def reset_usb_devices(device_filter):
+    """Find and reset USB devices matching the filter"""
+    log_info(f"Scanning for USB devices containing '{device_filter}'...")
     devices = find_usb_devices()
 
     for device in devices:
         log_info(f"Found USB device: {device['tag']} at {device['device_path']}")
     
-    dvb_devices = [d for d in devices if "DVB-T" in d.get("tag", "")]
+    filtered_devices = [d for d in devices if device_filter in d.get("tag", "")]
     
-    if not dvb_devices:
-        log_info("No DVB-T devices found")
+    if not filtered_devices:
+        log_info(f"No devices containing '{device_filter}' found")
         return True
     
-    log_info(f"Found {len(dvb_devices)} DVB-T device(s)")
+    log_info(f"Found {len(filtered_devices)} device(s) matching '{device_filter}'")
     
     success = True
-    for device in dvb_devices:
-        log_info(f"Found DVB-T device: {device['tag']} at {device['device_path']}")
+    for device in filtered_devices:
+        log_info(f"Found matching device: {device['tag']} at {device['device_path']}")
         if not reset_usb_device(device['device_path']):
             success = False
     
@@ -115,9 +132,18 @@ def main():
     log_info("WMBus Meters Runner starting...")
     
     try:
-        # Step 1: Reset DVB-T devices
-        if not reset_dvb_devices():
-            log_error("Failed to reset some DVB-T devices")
+        # Read configuration
+        config = get_config()
+        if config is None:
+            log_error("Failed to load configuration")
+            return 1
+        
+        device_filter = config.get("usb_device_filter", "DVB-T")
+        log_info(f"Using USB device filter: '{device_filter}'")
+        
+        # Step 1: Reset USB devices matching filter
+        if not reset_usb_devices(device_filter):
+            log_error("Failed to reset some USB devices")
             return 1
         
         # Step 2: Read WMBus meters
