@@ -5,6 +5,9 @@ FROM ${BUILD_FROM}
 # Copy root filesystem
 COPY rootfs /
 
+# Set execute permissions for s6-overlay scripts
+RUN chmod a+x /etc/s6-overlay/s6-rc.d/*/run /etc/s6-overlay/s6-rc.d/*/finish /usr/bin/*
+
 # Setup base
 RUN apk add --no-cache \
     coreutils=9.7-r1 \
