@@ -5,19 +5,37 @@ Periodically runs WMBus meters reading with automatic USB device reset functiona
 ## Features
 
 - **Automatic USB device detection and reset** - Finds and resets USB devices before reading
-- **Configurable reading interval** - Set how often to read meters (1-1440 minutes)
+- **Configurable reading interval** - Set how often to read meters (1-1440 minutes)  
 - **Flexible device filtering** - Configure which USB devices to reset
 - **Robust error handling** - Comprehensive logging and error recovery
+- **USB permission diagnostics** - Automatically checks and reports USB access issues
 - **s6-overlay integration** - Proper supervision and graceful shutdown
 
+## Requirements
+
+This addon requires direct USB device access to reset devices. You need to:
+
+1. **Enable privileged access** for USB operations
+2. **Map USB devices** to the container
+
 ## Configuration
+
+### Required Configuration
+
+```yaml
+privileged:
+  - SYS_RAWIO      # Required for USB device reset
+  - SYS_ADMIN      # Required for low-level USB operations
+devices:
+  - /dev/bus/usb   # Maps USB devices to container
+```
 
 ### Basic Configuration
 
 ```yaml
 log_level: info
 reading_interval_minutes: 30
-usb_device_filter: "DVB-T"
+usb_device_filter: "RTL"
 ```
 
 ### Configuration Options
