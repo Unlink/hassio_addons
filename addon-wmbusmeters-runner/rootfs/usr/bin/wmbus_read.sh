@@ -13,5 +13,3 @@ else
     bashio::log.error "WMBus meters reading failed"
     exit 1
 fi
-
-lsusb

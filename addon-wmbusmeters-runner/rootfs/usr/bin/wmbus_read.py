@@ -78,6 +78,9 @@ def reset_dvb_devices():
     """Find and reset all DVB-T devices"""
     log_info("Scanning for DVB-T devices...")
     devices = find_usb_devices()
+
+    for device in devices:
+        log_info(f"Found USB device: {device['tag']} at {device['device_path']}")
     
     dvb_devices = [d for d in devices if "DVB-T" in d.get("tag", "")]
     
