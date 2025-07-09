@@ -1,14 +1,34 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base:18.0.2
+
+
+# Build stage for compiling usbreset
+FROM alpine:3.19 AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    linux-headers
+
+# Copy and compile usbreset
+COPY usbreset.c /tmp/usbreset.c
+RUN gcc -o /tmp/usbreset /tmp/usbreset.c
+
 # hadolint ignore=DL3006
 FROM ${BUILD_FROM}
 
 # Copy root filesystem
 COPY rootfs /
 
-# Set execute permissions for s6-overlay scripts
-RUN chmod +x /etc/s6-overlay/s6-rc.d/wmbus-reader/run && \
+# Copy compiled binary from builder stage
+COPY --from=builder /tmp/usbreset /usr/bin/usbreset
+
+# Set execute permissions for s6-overlay scripts and binaries
+RUN chmod +x /etc/s6-overlay/s6-rc.d/init-example/run && \
+    chmod +x /etc/s6-overlay/s6-rc.d/wmbus-reader/run && \
     chmod +x /etc/s6-overlay/s6-rc.d/wmbus-reader/finish && \
-    chmod +x /usr/bin/wmbus_read.sh
+    chmod +x /usr/bin/wmbus_read.sh && \
+    chmod +x /usr/bin/usbreset
 
 # Setup base
 RUN apk add --no-cache \
