@@ -1,0 +1,28 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# WMBus Meters Runner - Periodic reader service
+# ==============================================================================
+
+bashio::log.info "WMBus Reader service starting..."
+
+# Get reading interval from configuration (in minutes)
+INTERVAL_MINUTES=$(bashio::config 'reading_interval_minutes')
+INTERVAL_SECONDS=$((INTERVAL_MINUTES * 60))
+
+bashio::log.info "Reading interval set to ${INTERVAL_MINUTES} minutes (${INTERVAL_SECONDS} seconds)"
+
+# Run the reading script periodically
+while true; do
+    bashio::log.info "Running WMBus reading cycle..."
+    
+    # Execute the reading script
+    if /usr/bin/wmbus_read.sh; then
+        bashio::log.info "WMBus reading cycle completed successfully"
+    else
+        bashio::log.error "WMBus reading cycle failed"
+    fi
+    
+    bashio::log.info "Waiting ${INTERVAL_MINUTES} minutes until next reading cycle..."
+    sleep "${INTERVAL_SECONDS}"
+done

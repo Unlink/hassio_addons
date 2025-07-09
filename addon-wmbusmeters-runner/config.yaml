@@ -1,6 +1,6 @@
 ---
 name: WMBus Meters Runner
-version: 0.0.3
+version: 0.0.4
 slug: wmbus-metters-runner
 description: Addon to run wmbusmeters periodically to collect data from wmbus meters.
 url: https://github.com/Unlink/hassio_addons/addon-wmbusmeters-runner
@@ -11,5 +11,7 @@ arch:
   - armv7
 options:
   log_level: info
+  reading_interval_minutes: 30
 schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)
+  reading_interval_minutes: int(1,1440)
