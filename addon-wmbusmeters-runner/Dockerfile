@@ -34,7 +34,10 @@ RUN chmod +x /etc/s6-overlay/s6-rc.d/wmbus-reader/run && \
 RUN apk add --no-cache \
     coreutils=9.7-r1 \
     python3 \
-    usbutils
+    usbutils \
+    libcap \
+    util-linux \
+    kmod
 
 # Build arguments
 ARG BUILD_ARCH
