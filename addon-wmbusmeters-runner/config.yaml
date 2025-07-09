@@ -7,6 +7,8 @@ url: https://github.com/Unlink/hassio_addons/addon-wmbusmeters-runner
 init: false
 arch:
   - aarch64
+  - amd64
+  - armv7
 options:
   log_level: info
 schema:
