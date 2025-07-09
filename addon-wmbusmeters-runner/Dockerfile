@@ -27,11 +27,14 @@ COPY --from=builder /tmp/usbreset /usr/bin/usbreset
 RUN chmod +x /etc/s6-overlay/s6-rc.d/wmbus-reader/run && \
     chmod +x /etc/s6-overlay/s6-rc.d/wmbus-reader/finish && \
     chmod +x /usr/bin/wmbus_read.sh && \
+    chmod +x /usr/bin/wmbus_read.py && \
     chmod +x /usr/bin/usbreset
 
-# Setup base
+# Setup base packages
 RUN apk add --no-cache \
-    coreutils=9.7-r1
+    coreutils=9.7-r1 \
+    python3 \
+    usbutils
 
 # Build arguments
 ARG BUILD_ARCH
