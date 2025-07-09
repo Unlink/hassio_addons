@@ -24,8 +24,7 @@ COPY rootfs /
 COPY --from=builder /tmp/usbreset /usr/bin/usbreset
 
 # Set execute permissions for s6-overlay scripts and binaries
-RUN chmod +x /etc/s6-overlay/s6-rc.d/init-example/run && \
-    chmod +x /etc/s6-overlay/s6-rc.d/wmbus-reader/run && \
+RUN chmod +x /etc/s6-overlay/s6-rc.d/wmbus-reader/run && \
     chmod +x /etc/s6-overlay/s6-rc.d/wmbus-reader/finish && \
     chmod +x /usr/bin/wmbus_read.sh && \
     chmod +x /usr/bin/usbreset
