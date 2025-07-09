@@ -5,7 +5,6 @@ slug: wmbus-metters-runner
 description: Addon to run wmbusmeters periodically to collect data from wmbus meters.
 url: https://github.com/Unlink/hassio_addons/addon-wmbusmeters-runner
 init: false
-privileged: true
 devices:
   - /dev/bus/usb
 udev: true
