@@ -1,0 +1,6 @@
+{
+  "name": "My custom add-ons",
+  "udev": true,
+  "url": "https://github.com/Unlink/hassio_addons",
+  "maintainer": "Unlink"
+}
