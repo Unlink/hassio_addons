@@ -109,9 +109,20 @@
       const imgData = images[currentIndex];
       const img = document.getElementById('gallery-img');
       img.style.opacity = 0;
-      // Support both string and object with url/caption
-      let url = typeof imgData === 'string' ? imgData : imgData.url;
-      let caption = typeof imgData === 'string' ? '' : (imgData.caption || '');
+      // Support both string and object with full_image_url and metadata
+      let url = typeof imgData === 'string' ? imgData : imgData.full_image_url;
+      let caption = '';
+      if (typeof imgData === 'object') {
+        // Compose caption from available metadata
+        let parts = [];
+        if (imgData.original_filename) parts.push(imgData.original_filename);
+        if (imgData.author) parts.push(imgData.author);
+        if (imgData.city || imgData.state || imgData.country) {
+          let loc = [imgData.city, imgData.state, imgData.country].filter(Boolean).join(', ');
+          if (loc) parts.push(loc);
+        }
+        caption = parts.join(' • ');
+      }
       img.onload = () => { img.style.opacity = 1; };
       img.src = url;
       document.getElementById('caption').textContent = caption;
