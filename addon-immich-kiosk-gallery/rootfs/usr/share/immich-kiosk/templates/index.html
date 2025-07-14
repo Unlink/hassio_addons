@@ -167,7 +167,10 @@
       collections.random = (randomRes.success && randomRes.photos) ? randomRes.photos : [];
     }
 
+    let isTransitioning = false;
     function showImage(index) {
+      if (isTransitioning) return;
+      isTransitioning = true;
       const images = collections[currentCollection];
       const img = document.getElementById('gallery-img');
       const imgPreview = document.getElementById('gallery-img-preview');
@@ -177,53 +180,71 @@
         imgPreview.style.opacity = 0;
         imgPreview.src = '';
         document.getElementById('caption').textContent = 'No images.';
+        isTransitioning = false;
         return;
       }
       currentIndex = (index + images.length) % images.length;
       const imgData = images[currentIndex];
-      // Support both string and object with full_image_url and metadata
       let url = typeof imgData === 'string' ? imgData : imgData.full_image_url;
       let previewUrl = typeof imgData === 'object' && imgData.thumbnail_url ? imgData.thumbnail_url : url;
       let caption = '';
       if (typeof imgData === 'object') {
-        // Compose caption: date (bold), author, location
         let parts = [];
-        // Date
         if (imgData.file_created_at) {
           let date = new Date(imgData.file_created_at);
           if (!isNaN(date)) {
             parts.push(`<b>${date.toLocaleDateString()}</b>`);
           }
         }
-        // Author
         if (imgData.author) parts.push(imgData.author);
-        // Location
         if (imgData.city || imgData.state || imgData.country) {
           let loc = [imgData.city, imgData.state, imgData.country].filter(Boolean).join(', ');
           if (loc) parts.push(loc);
         }
         caption = parts.join(' • ');
       }
-      img.classList.remove('visible');
+
+      // 1. Show preview above current image, fade it in
+      imgPreview.style.transition = 'none';
       imgPreview.style.opacity = 0;
-      imgPreview.src = '';
-      // Load preview first
-      if (previewUrl && previewUrl !== url) {
-        imgPreview.src = previewUrl;
-        imgPreview.style.visibility = "visible";
-        imgPreview.onload = () => {
-          imgPreview.style.opacity = 1;
-        };
+      imgPreview.src = previewUrl;
+      imgPreview.style.zIndex = 2;
+      imgPreview.style.visibility = 'visible';
+      imgPreview.onload = () => {
+        imgPreview.style.transition = 'opacity 0.4s';
+        imgPreview.style.opacity = 1;
+        // 2. Fade out current image
+        img.classList.remove('visible');
+        setTimeout(() => {
+          // 3. When preview is visible, load full image
+          img.onload = () => {
+            img.classList.add('visible');
+            imgPreview.style.opacity = 0;
+            setTimeout(() => {
+              imgPreview.style.visibility = 'hidden';
+              imgPreview.src = '';
+              isTransitioning = false;
+            }, 400);
+          };
+          img.src = url;
+          document.getElementById('caption').innerHTML = caption;
+        }, 400);
+      };
+      // fallback if preview and full are the same
+      if (previewUrl === url) {
+        imgPreview.style.opacity = 0;
+        imgPreview.style.visibility = 'hidden';
+        imgPreview.src = '';
+        img.classList.remove('visible');
+        setTimeout(() => {
+          img.onload = () => {
+            img.classList.add('visible');
+            isTransitioning = false;
+          };
+          img.src = url;
+          document.getElementById('caption').innerHTML = caption;
+        }, 100);
       }
-      // Wait for opacity transition out, then change src and fade in
-      setTimeout(() => {
-        img.onload = () => {
-          img.classList.add('visible');
-          imgPreview.style.visibility = "none";
-        };
-        img.src = url;
-        document.getElementById('caption').innerHTML = caption;
-      }, 100);
     }
     function showPrevImage() {
       showImage(currentIndex - 1);
