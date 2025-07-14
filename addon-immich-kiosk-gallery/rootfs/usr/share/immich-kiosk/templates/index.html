@@ -210,13 +210,17 @@
       imgPreview.src = previewUrl;
       imgPreview.style.zIndex = 2;
       imgPreview.style.visibility = 'visible';
+      // Wait for preview to load
       imgPreview.onload = () => {
         imgPreview.style.transition = 'opacity 0.4s';
         imgPreview.style.opacity = 1;
         // 2. Fade out current image
         img.classList.remove('visible');
+        // 3. Wait for preview fade-in to finish, then load full image
         setTimeout(() => {
-          // 3. When preview is visible, load full image
+          // Hide the current image immediately to avoid flicker
+          img.src = '';
+          // Now load the new full image
           img.onload = () => {
             img.classList.add('visible');
             imgPreview.style.opacity = 0;
@@ -237,6 +241,7 @@
         imgPreview.src = '';
         img.classList.remove('visible');
         setTimeout(() => {
+          img.src = '';
           img.onload = () => {
             img.classList.add('visible');
             isTransitioning = false;
