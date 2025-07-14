@@ -207,8 +207,8 @@ def api_memories():
         for memory in today_memories:
             if memory.assets:
                 for asset in memory.assets:
-                    if asset.is_archived:
-                        logger.debug(f"Skipping archived asset {asset.id} in memory {memory.id}")
+                    if asset.is_archived or asset.type == Asset.type is not 'IMAGE':
+                        logger.debug(f"Skipping asset {asset.id} in memory {memory.id}")
                         continue
                     asset_data = {
                         'id': asset.id,
