@@ -169,7 +169,9 @@
 
     let isTransitioning = false;
     function showImage(index) {
-      if (isTransitioning) return;
+      if (isTransitioning) {
+        images.src = ''; // Reset current image to avoid flicker
+      }
       isTransitioning = true;
       const images = collections[currentCollection];
       const img = document.getElementById('gallery-img');
