@@ -57,6 +57,21 @@
       opacity: 1;
       transition: opacity 0.7s cubic-bezier(.4,0,.2,1);
     }
+
+    #image-frame img#gallery-img {
+      position:absolute;
+      inset:0;
+      width:100vw;
+      height:100vh;
+      object-fit:contain;
+      object-position:center;
+      z-index:0;
+      pointer-events:none;
+      user-select:none;
+      opacity:0;
+      transition:opacity 0.5s;
+    }
+
     #switcher {
       position: absolute;
       top: 2rem;
@@ -136,6 +151,7 @@
         </svg>
       </button>
       <img id="gallery-img" src="" alt="Gallery image" />
+      <img id="gallery-img-preview" src="" alt="Preview image" />
       <button id="next-btn" class="nav-btn" aria-label="Next photo">
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="14" cy="14" r="13" fill="rgba(40,40,40,0.6)" stroke="#fff" stroke-width="1.2"/>
@@ -164,9 +180,12 @@
     function showImage(index) {
       const images = collections[currentCollection];
       const img = document.getElementById('gallery-img');
+      const imgPreview = document.getElementById('gallery-img-preview');
       if (!images || images.length === 0) {
         img.classList.remove('visible');
         img.src = '';
+        imgPreview.style.opacity = 0;
+        imgPreview.src = '';
         document.getElementById('caption').textContent = 'No images.';
         return;
       }
@@ -174,15 +193,16 @@
       const imgData = images[currentIndex];
       // Support both string and object with full_image_url and metadata
       let url = typeof imgData === 'string' ? imgData : imgData.full_image_url;
+      let previewUrl = typeof imgData === 'object' && imgData.thumbnail_url ? imgData.thumbnail_url : url;
       let caption = '';
       if (typeof imgData === 'object') {
-        // Compose caption: date, author, location
+        // Compose caption: date (bold), author, location
         let parts = [];
         // Date
         if (imgData.file_created_at) {
           let date = new Date(imgData.file_created_at);
           if (!isNaN(date)) {
-            parts.push(date.toLocaleDateString());
+            parts.push(`<b>${date.toLocaleDateString()}</b>`);
           }
         }
         // Author
@@ -195,13 +215,23 @@
         caption = parts.join(' • ');
       }
       img.classList.remove('visible');
+      imgPreview.style.opacity = 0;
+      imgPreview.src = '';
+      // Load preview first
+      if (previewUrl && previewUrl !== url) {
+        imgPreview.src = previewUrl;
+        imgPreview.onload = () => {
+          imgPreview.style.opacity = 1;
+        };
+      }
       // Wait for opacity transition out, then change src and fade in
       setTimeout(() => {
         img.onload = () => {
           img.classList.add('visible');
+          imgPreview.style.opacity = 0;
         };
         img.src = url;
-        document.getElementById('caption').textContent = caption;
+        document.getElementById('caption').innerHTML = caption;
       }, 100);
     }
     function showPrevImage() {
