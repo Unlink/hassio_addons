@@ -207,6 +207,9 @@ def api_memories():
         for memory in today_memories:
             if memory.assets:
                 for asset in memory.assets:
+                    if asset.is_archived:
+                        logger.debug(f"Skipping archived asset {asset.id} in memory {memory.id}")
+                        continue
                     asset_data = {
                         'id': asset.id,
                         'type': asset.type,
@@ -215,8 +218,6 @@ def api_memories():
                         'file_modified_at': asset.file_modified_at,
                         'updated_at': asset.updated_at,
                         'is_favorite': asset.is_favorite,
-                        'is_archived': asset.is_archived,
-                        'duration': asset.duration,
                         'thumbnail_url': f"/api/proxy/thumbnail/{asset.id}",
                         'full_image_url': f"/api/proxy/image/{asset.id}"
                     }
@@ -278,8 +279,6 @@ def api_random_photos():
                 'file_modified_at': photo.file_modified_at,
                 'updated_at': photo.updated_at,
                 'is_favorite': photo.is_favorite,
-                'is_archived': photo.is_archived,
-                'duration': photo.duration,
                 'thumbnail_url': f"/api/proxy/thumbnail/{photo.id}",
                 'full_image_url': f"/api/proxy/image/{photo.id}"
             }

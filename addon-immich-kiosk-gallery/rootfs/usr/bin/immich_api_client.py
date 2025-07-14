@@ -290,7 +290,7 @@ class ImmichAPIClient:
             for album in found_albums:
                 assets = self.get_album_assets(album.id)
                 # Filter only images (not videos) for photos
-                photo_assets = [asset for asset in assets if asset.type.upper() == 'IMAGE']
+                photo_assets = [asset for asset in assets if asset.type.upper() == 'IMAGE' and not asset.is_archived]
                 all_assets.extend(photo_assets)
                 logger.debug(f"Album '{album.name}' contributed {len(photo_assets)} photos")
             
