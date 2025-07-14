@@ -7,67 +7,113 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🖼️ Immich Kiosk Gallery</h1>
-            <p class="subtitle">Slideshow pre vaše fotografie z Immich</p>
-        </header>
-
-        <main>
-            <div class="welcome-card">
-                <h2>Hello World! 👋</h2>
-                <p>Webserver je úspešne spustený!</p>
-                
-                <div class="config-info">
-                    <h3>Konfigurácia:</h3>
-                    <ul>
-                        <li><strong>Immich URL:</strong> {{ config.immich_url or 'Nie je nastavená' }}</li>
-                        <li><strong>API Key:</strong> {{ '✅ Nastavený' if config.immich_api_key else '❌ Nie je nastavený' }}</li>
-                        <li><strong>Zobrazovať spomienky:</strong> {{ '✅' if config.immich_show_memories else '❌' }}</li>
-                        <li><strong>Zobrazovať albumy:</strong> {{ '✅' if config.immich_show_albums else '❌' }}</li>
-                        <li><strong>Vybrané albumy:</strong> {{ config.immich_albums|length }} albumov</li>
-                    </ul>
-                </div>
-
-                <div class="status">
-                    <span class="status-indicator"></span>
-                    Server beží na porte 8456
-                </div>
-
-                <div class="immich-section">
-                    <h3>📸 Immich Pripojenie</h3>
-                    <div id="immich-status" class="loading">Kontrolujem pripojenie...</div>
-                    
-                    <div id="memories-section" style="display: none;">
-                        <h4>🎞️ Memories Slideshow</h4>
-                        <p>Zobrazujú sa len memories, ktoré majú byť aktuálne viditeľné podľa showAt/hideAt nastavení.</p>
-                        <button id="load-memories" class="btn">Načítať Memories</button>
-                        <div id="memories-container"></div>
-                        
-                        <div class="slideshow-help" style="margin-top: 15px; font-size: 0.9rem; color: #666;">
-                            <strong>Ovládanie slideshow:</strong><br>
-                            • ▶️/⏸️ tlačidlo - spustenie/zastavenie automatického slideshow<br>
-                            • ◀️/▶️ tlačidlá - manuálne prepínanie<br>
-                            • Klávesy ←/→ - prepínanie klávesnicou<br>
-                            • Medzerník - spustenie/zastavenie slideshow<br>
-                            • Escape - zastavenie slideshow<br>
-                            • Kliknutie na miniatúry - skok na konkrétny obrázok
-                        </div>
-                    </div>
-                    
-                    <div id="albums-section" style="display: none;">
-                        <h4>📁 Albumy</h4>
-                        <p>Zobrazujú sa fotky z nakonfigurovaných albumov.</p>
-                        <button id="load-albums" class="btn">Načítať Albumy</button>
-                        <div id="albums-container"></div>
+    <!-- Fullscreen Slideshow Container -->
+    <div id="slideshow-container" class="fullscreen-slideshow">
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="loading-content">
+                <div class="logo">🖼️</div>
+                <h1>Immich Kiosk Gallery</h1>
+                <div class="loading-spinner"></div>
+                <p id="loading-status">Pripájam sa k Immich serveru...</p>
+            </div>
+        </div>
+        
+        <!-- Error Screen -->
+        <div id="error-screen" class="error-screen hidden">
+            <div class="error-content">
+                <div class="error-icon">❌</div>
+                <h2>Chyba pripojenia</h2>
+                <p id="error-message">Nepodarilo sa pripojiť k Immich serveru</p>
+                <button id="retry-button" class="retry-btn">Skúsiť znovu</button>
+            </div>
+        </div>
+        
+        <!-- Main Slideshow -->
+        <div id="main-slideshow" class="main-slideshow hidden">
+            <!-- Current Slide -->
+            <div id="current-slide" class="slide-container">
+                <img id="current-image" src="" alt="" />
+                <div class="slide-overlay">
+                    <div class="slide-info">
+                        <div id="image-filename" class="filename"></div>
+                        <div id="image-date" class="date"></div>
+                        <div id="image-source" class="source"></div>
                     </div>
                 </div>
             </div>
-        </main>
-
-        <footer>
-            <p>Immich Kiosk Gallery v0.0.1</p>
-        </footer>
+            
+            <!-- Progress Bar -->
+            <div id="progress-bar" class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+        </div>
+        
+        <!-- Controls Panel -->
+        <div id="controls-panel" class="controls-panel">
+            <div class="controls-row">
+                <!-- Source Toggle -->
+                <div id="source-toggle" class="source-toggle hidden">
+                    <button id="memories-btn" class="source-btn active">
+                        🎞️ Memories
+                    </button>
+                    <button id="albums-btn" class="source-btn">
+                        📁 Albumy  
+                    </button>
+                </div>
+                
+                <!-- Playback Controls -->
+                <div class="playback-controls">
+                    <button id="prev-btn" class="control-btn">
+                        <span>◀️</span>
+                    </button>
+                    <button id="play-pause-btn" class="control-btn play-btn">
+                        <span>⏸️</span>
+                    </button>
+                    <button id="next-btn" class="control-btn">
+                        <span>▶️</span>
+                    </button>
+                </div>
+                
+                <!-- Settings -->
+                <div class="settings-controls">
+                    <button id="settings-btn" class="control-btn">
+                        <span>⚙️</span>
+                    </button>
+                    <button id="fullscreen-btn" class="control-btn">
+                        <span>⛶</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Status Info -->
+            <div class="status-row">
+                <span id="slide-counter" class="slide-counter">0 / 0</span>
+                <span id="connection-status" class="connection-status"></span>
+                <span id="current-time" class="current-time"></span>
+            </div>
+        </div>
+        
+        <!-- Settings Panel -->
+        <div id="settings-panel" class="settings-panel hidden">
+            <div class="settings-content">
+                <h3>Nastavenia slideshow</h3>
+                <div class="setting-item">
+                    <label for="slide-duration">Trvanie snímky (sekundy):</label>
+                    <input type="range" id="slide-duration" min="3" max="30" value="8" />
+                    <span id="duration-value">8s</span>
+                </div>
+                <div class="setting-item">
+                    <label for="auto-refresh">Automatické obnovenie:</label>
+                    <input type="checkbox" id="auto-refresh" checked />
+                </div>
+                <div class="setting-item">
+                    <label>Immich server:</label>
+                    <span id="immich-url">{{ config.immich_url or 'Nie je nastavená' }}</span>
+                </div>
+                <button id="close-settings" class="close-btn">Zatvoriť</button>
+            </div>
+        </div>
     </div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
