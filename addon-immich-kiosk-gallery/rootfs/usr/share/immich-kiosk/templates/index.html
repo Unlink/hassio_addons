@@ -19,34 +19,49 @@
       height: 100vh;
     }
     #gallery-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      position: fixed;
+      inset: 0;
       width: 100vw;
       height: 100vh;
+      overflow: hidden;
+      background: #111;
     }
     #image-frame {
-      max-width: 90vw;
-      max-height: 80vh;
-      box-shadow: 0 0 40px #000a;
-      border-radius: 16px;
-      background: #222;
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
-      margin-bottom: 1.5rem;
+      background: #111;
+      z-index: 1;
     }
     #image-frame img {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 16px;
-      transition: opacity 0.7s;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      object-position: center;
       background: #222;
+      border-radius: 0;
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.7s cubic-bezier(.4,0,.2,1);
+    }
+    #image-frame img.visible {
+      opacity: 1;
+      transition: opacity 0.7s cubic-bezier(.4,0,.2,1);
     }
     #switcher {
-      margin-bottom: 1.5rem;
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      z-index: 10;
       display: flex;
       gap: 1rem;
     }
@@ -59,20 +74,33 @@
       font-size: 1.1rem;
       cursor: pointer;
       transition: background 0.2s;
+      box-shadow: 0 2px 8px #0006;
     }
     .switch-btn.active {
       background: #1976d2;
     }
     #caption {
-      margin-top: 0.5rem;
-      color: #ccc;
-      font-size: 1rem;
+      position: absolute;
+      left: 50%;
+      bottom: 2.5rem;
+      transform: translateX(-50%);
+      color: #fff;
+      font-size: 1.15rem;
       min-height: 1.5em;
       text-align: center;
+      background: rgba(0,0,0,0.45);
+      padding: 0.7em 1.5em;
+      border-radius: 1.5em;
+      z-index: 5;
+      box-shadow: 0 2px 16px #000a;
+      pointer-events: none;
+      user-select: none;
+      max-width: 90vw;
+      white-space: pre-line;
     }
 
     .nav-btn {
-      background: #222;
+      background: rgba(34,34,34,0.7);
       color: #fff;
       border: none;
       border-radius: 50%;
@@ -83,7 +111,11 @@
       cursor: pointer;
       opacity: 0.7;
       transition: background 0.2s, opacity 0.2s;
-      z-index: 2;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
     }
     .nav-btn:hover {
       background: #1976d2;
@@ -99,8 +131,8 @@
       <button id="prev-btn" class="nav-btn" aria-label="Previous photo">&#8592;</button>
       <img id="gallery-img" src="" alt="Gallery image" style="opacity:0;" />
       <button id="next-btn" class="nav-btn" aria-label="Next photo">&#8594;</button>
+      <div id="caption"></div>
     </div>
-    <div id="caption"></div>
   </div>
   <script>
     let collections = { memories: [], random: [] };
@@ -120,16 +152,15 @@
 
     function showImage(index) {
       const images = collections[currentCollection];
+      const img = document.getElementById('gallery-img');
       if (!images || images.length === 0) {
-        document.getElementById('gallery-img').style.opacity = 0;
-        document.getElementById('gallery-img').src = '';
+        img.classList.remove('visible');
+        img.src = '';
         document.getElementById('caption').textContent = 'No images.';
         return;
       }
       currentIndex = (index + images.length) % images.length;
       const imgData = images[currentIndex];
-      const img = document.getElementById('gallery-img');
-      img.style.opacity = 0;
       // Support both string and object with full_image_url and metadata
       let url = typeof imgData === 'string' ? imgData : imgData.full_image_url;
       let caption = '';
@@ -152,9 +183,15 @@
         }
         caption = parts.join(' • ');
       }
-      img.onload = () => { img.style.opacity = 1; };
-      img.src = url;
-      document.getElementById('caption').textContent = caption;
+      img.classList.remove('visible');
+      // Wait for opacity transition out, then change src and fade in
+      setTimeout(() => {
+        img.onload = () => {
+          img.classList.add('visible');
+        };
+        img.src = url;
+        document.getElementById('caption').textContent = caption;
+      }, 100);
     }
     function showPrevImage() {
       showImage(currentIndex - 1);
