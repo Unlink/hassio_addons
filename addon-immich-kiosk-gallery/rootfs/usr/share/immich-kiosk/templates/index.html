@@ -241,27 +241,38 @@
 
       lastSlideIndex = idx;
     }
-    // Mouse swipe support
+    // Improved mouse swipe support
     let mouseDown = false;
     let mouseStartX = 0;
     let mouseStartY = 0;
+    let mouseMoved = false;
+    let swipeLocked = false;
 
     slideImg.addEventListener('mousedown', function(e) {
+      if (swipeLocked) return;
       mouseDown = true;
+      mouseMoved = false;
       mouseStartX = e.clientX;
       mouseStartY = e.clientY;
     });
-    window.addEventListener('mouseup', function(e) {
+    window.addEventListener('mousemove', function(e) {
       if (!mouseDown) return;
+      mouseMoved = true;
+    });
+    window.addEventListener('mouseup', function(e) {
+      if (!mouseDown || swipeLocked) return;
       mouseDown = false;
+      if (!mouseMoved) return;
       const dx = e.clientX - mouseStartX;
       const dy = Math.abs(e.clientY - mouseStartY);
       if (Math.abs(dx) > 50 && dy < 80) {
+        swipeLocked = true;
         if (dx < 0) {
           nextSlide();
         } else {
           prevSlide();
         }
+        setTimeout(() => { swipeLocked = false; }, 650);
         if (slideTimer) {
           clearInterval(slideTimer);
           slideTimer = setInterval(nextSlide, 6000);
@@ -292,42 +303,47 @@
       slideTimer = setInterval(nextSlide, 6000);
     }
 
-    // Touch/Swipe support
+    // Improved touch swipe support
     let touchStartX = 0;
-    let touchEndX = 0;
     let touchStartY = 0;
-    let touchEndY = 0;
+    let touchMoved = false;
+    let touchSwipeLocked = false;
     const minSwipeDistance = 50;
 
     slideImg.addEventListener('touchstart', function(e) {
+      if (touchSwipeLocked) return;
       if (e.touches.length === 1) {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
+        touchMoved = false;
       }
+    });
+    slideImg.addEventListener('touchmove', function(e) {
+      touchMoved = true;
     });
     slideImg.addEventListener('touchend', function(e) {
+      if (touchSwipeLocked) return;
+      if (!touchMoved) return;
       if (e.changedTouches.length === 1) {
-        touchEndX = e.changedTouches[0].clientX;
-        touchEndY = e.changedTouches[0].clientY;
-        handleSwipe();
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const dx = touchEndX - touchStartX;
+        const dy = Math.abs(touchEndY - touchStartY);
+        if (Math.abs(dx) > minSwipeDistance && dy < 80) {
+          touchSwipeLocked = true;
+          if (dx < 0) {
+            nextSlide();
+          } else {
+            prevSlide();
+          }
+          setTimeout(() => { touchSwipeLocked = false; }, 650);
+          if (slideTimer) {
+            clearInterval(slideTimer);
+            slideTimer = setInterval(nextSlide, 6000);
+          }
+        }
       }
     });
-
-    function handleSwipe() {
-      const dx = touchEndX - touchStartX;
-      const dy = Math.abs(touchEndY - touchStartY);
-      if (Math.abs(dx) > minSwipeDistance && dy < 80) {
-        if (dx < 0) {
-          nextSlide();
-        } else {
-          prevSlide();
-        }
-        if (slideTimer) {
-          clearInterval(slideTimer);
-          slideTimer = setInterval(nextSlide, 6000);
-        }
-      }
-    }
 
     // Also allow left/right arrow keys for navigation
     document.addEventListener('keydown', function(e) {
