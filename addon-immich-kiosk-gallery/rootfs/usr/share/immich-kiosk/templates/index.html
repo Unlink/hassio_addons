@@ -167,8 +167,6 @@
     let isTransitioning = false;
     let previewToggle = false;
     function showImage(index) {
-      if (isTransitioning) return;
-      isTransitioning = true;
       const images = collections[currentCollection];
       const img = document.getElementById('gallery-img');
       const imgPreviewA = document.getElementById('gallery-img-preview-a');
@@ -206,6 +204,11 @@
         }
         caption = parts.join(' • ');
       }
+
+      if (isTransitioning) {
+        img.src = '';
+      }
+      isTransitioning = true;
 
       // 1. Show new preview above current image, fade it in
       imgPreview.style.transition = 'none';
