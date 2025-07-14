@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immich Kiosk Gallery</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖼️ Immich Kiosk Gallery</h1>
+            <p class="subtitle">Slideshow pre vaše fotografie z Immich</p>
+        </header>
+
+        <main>
+            <div class="welcome-card">
+                <h2>Hello World! 👋</h2>
+                <p>Webserver je úspešne spustený!</p>
+                
+                <div class="config-info">
+                    <h3>Konfigurácia:</h3>
+                    <ul>
+                        <li><strong>Immich URL:</strong> {{ config.immich_url or 'Nie je nastavená' }}</li>
+                        <li><strong>API Key:</strong> {{ '✅ Nastavený' if config.immich_api_key else '❌ Nie je nastavený' }}</li>
+                        <li><strong>Zobrazovať spomienky:</strong> {{ '✅' if config.immich_show_memories else '❌' }}</li>
+                        <li><strong>Zobrazovať albumy:</strong> {{ '✅' if config.immich_show_albums else '❌' }}</li>
+                        <li><strong>Vybrané albumy:</strong> {{ config.immich_albums|length }} albumov</li>
+                    </ul>
+                </div>
+
+                <div class="status">
+                    <span class="status-indicator"></span>
+                    Server beží na porte 8080
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Immich Kiosk Gallery v0.0.1</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

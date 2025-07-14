@@ -1,0 +1,7 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# Home Assistant Community Add-on: Immich Kiosk Gallery
+# Handle service finish
+# ==============================================================================
+
+bashio::log.info "Immich Kiosk Gallery service finished"
