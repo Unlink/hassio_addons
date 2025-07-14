@@ -35,7 +35,7 @@ class ImmichAPIClient:
     def test_connection(self):
         """Test connection to Immich server"""
         try:
-            response = self.session.get(f"{self.base_url}/api/server-info/ping", timeout=10)
+            response = self.session.get(f"{self.base_url}/api/users/me", timeout=10)
             return response.status_code == 200
         except Exception as e:
             logger.error(f"Failed to connect to Immich server: {e}")
@@ -62,7 +62,7 @@ class ImmichAPIClient:
     def get_asset_info(self, asset_id):
         """Get detailed information about an asset"""
         try:
-            response = self.session.get(f"{self.base_url}/api/asset/assetById/{asset_id}", timeout=10)
+            response = self.session.get(f"{self.base_url}/api/assets/{asset_id}", timeout=10)
             if response.status_code == 200:
                 return response.json()
             return None
@@ -77,7 +77,7 @@ class ImmichAPIClient:
     def get_asset_image_data(self, asset_id, size='preview'):
         """Get image data from Immich API"""
         try:
-            url = f"{self.base_url}/api/asset/thumbnail/{asset_id}?size={size}&key={self.api_key}"
+            url = f"{self.base_url}/api/assets/{asset_id}/thumbnail?size={size}"
             response = self.session.get(url, timeout=30)
             
             if response.status_code == 200:
@@ -280,8 +280,8 @@ def proxy_full_image(asset_id):
         return jsonify({'error': 'Immich not configured'}), 400
     
     try:
-        # For full images, we use a different endpoint
-        url = f"{immich_client.base_url}/api/asset/file/{asset_id}?key={immich_client.api_key}"
+        # For full images, we use the original asset endpoint
+        url = f"{immich_client.base_url}/api/assets/{asset_id}/original"
         response = immich_client.session.get(url, timeout=60, stream=True)
         
         if response.status_code == 200:
@@ -332,7 +332,7 @@ def image_proxy(image_path):
     
     try:
         # Forward the request to the Immich API
-        response = immich_client.session.get(f"{immich_client.base_url}/api/asset/file/{image_path}", stream=True)
+        response = immich_client.session.get(f"{immich_client.base_url}/api/assets/{image_path}/original", stream=True)
         
         if response.status_code == 200:
             # Return the image data directly
