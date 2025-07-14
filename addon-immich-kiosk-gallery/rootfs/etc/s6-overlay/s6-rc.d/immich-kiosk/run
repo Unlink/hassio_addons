@@ -1,4 +1,4 @@
-#!/command/with-contenv bashio
+#!/usr/bin/with-contenv bashio
 # ==============================================================================
 # Home Assistant Community Add-on: Immich Kiosk Gallery
 # Runs the Immich Kiosk Gallery web server
@@ -6,8 +6,8 @@
 
 bashio::log.info "Starting Immich Kiosk Gallery..."
 
-# Wait for dependencies
-s6-svwait -u /run/service/init-example
+# Dependencies are handled by s6-rc system automatically
+# No need for manual s6-svwait since we have dependencies.d
 
 # Set executable permissions
 chmod +x /usr/bin/immich_kiosk.py
