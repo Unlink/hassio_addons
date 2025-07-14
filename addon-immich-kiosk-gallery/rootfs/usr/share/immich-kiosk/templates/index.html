@@ -70,19 +70,7 @@
       min-height: 1.5em;
       text-align: center;
     }
-  </style>
-  <div id="gallery-container">
-    <div id="switcher">
-      <button class="switch-btn active" id="memories-btn">Memories</button>
-      <button class="switch-btn" id="random-btn">Random</button>
-    </div>
-    <div id="image-frame">
-      <button id="prev-btn" class="nav-btn" aria-label="Previous photo">&#8592;</button>
-      <img id="gallery-img" src="" alt="Gallery image" style="opacity:0;" />
-      <button id="next-btn" class="nav-btn" aria-label="Next photo">&#8594;</button>
-    </div>
-    <div id="caption"></div>
-  </div>
+
     .nav-btn {
       background: #222;
       color: #fff;
@@ -101,6 +89,19 @@
       background: #1976d2;
       opacity: 1;
     }
+  </style>
+  <div id="gallery-container">
+    <div id="switcher">
+      <button class="switch-btn active" id="memories-btn">Memories</button>
+      <button class="switch-btn" id="random-btn">Random</button>
+    </div>
+    <div id="image-frame">
+      <button id="prev-btn" class="nav-btn" aria-label="Previous photo">&#8592;</button>
+      <img id="gallery-img" src="" alt="Gallery image" style="opacity:0;" />
+      <button id="next-btn" class="nav-btn" aria-label="Next photo">&#8594;</button>
+    </div>
+    <div id="caption"></div>
+  </div>
   <script>
     let collections = { memories: [], random: [] };
     let currentCollection = 'memories';
@@ -181,6 +182,68 @@
       startSlideshow();
     }
 
+    // --- Swipe support ---
+    function addSwipeSupport() {
+      const frame = document.getElementById('image-frame');
+      let startX = null;
+      let startY = null;
+      let isTouch = false;
+
+      frame.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 1) {
+          isTouch = true;
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }
+      });
+      frame.addEventListener('touchmove', function(e) {
+        // Prevent scrolling if horizontal swipe
+        if (!isTouch || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        if (Math.abs(dx) > Math.abs(dy)) e.preventDefault();
+      }, { passive: false });
+      frame.addEventListener('touchend', function(e) {
+        if (!isTouch) return;
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+          if (dx < 0) {
+            showNextImage();
+          } else {
+            showPrevImage();
+          }
+        }
+        isTouch = false;
+      });
+
+      // Optional: mouse drag for desktop
+      let mouseDown = false, mouseStartX = 0, mouseStartY = 0;
+      frame.addEventListener('mousedown', function(e) {
+        mouseDown = true;
+        mouseStartX = e.clientX;
+        mouseStartY = e.clientY;
+      });
+      frame.addEventListener('mousemove', function(e) {
+        // Prevent unwanted selection
+        if (mouseDown) e.preventDefault();
+      });
+      frame.addEventListener('mouseup', function(e) {
+        if (!mouseDown) return;
+        const dx = e.clientX - mouseStartX;
+        const dy = e.clientY - mouseStartY;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+          if (dx < 0) {
+            showNextImage();
+          } else {
+            showPrevImage();
+          }
+        }
+        mouseDown = false;
+      });
+    }
+
     // --- Init ---
     async function initGallery() {
       await fetchCollections();
@@ -190,6 +253,7 @@
       document.getElementById('random-btn').onclick = () => switchCollection('random');
       document.getElementById('prev-btn').onclick = showPrevImage;
       document.getElementById('next-btn').onclick = showNextImage;
+      addSwipeSupport();
     }
     window.addEventListener('DOMContentLoaded', initGallery);
   </script>
