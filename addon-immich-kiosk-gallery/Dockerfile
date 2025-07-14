@@ -9,9 +9,9 @@ COPY rootfs /
 # Set execute permissions for s6-overlay scripts and binaries
 RUN chmod +x /etc/s6-overlay/s6-rc.d/immich-kiosk/run && \
     chmod +x /etc/s6-overlay/s6-rc.d/immich-kiosk/finish && \
-    chmod +x /etc/s6-overlay/s6-rc.d/init-immich-kiosk/up && \
     chmod +x /usr/bin/immich_kiosk.py
 
+# Setup base packages
 # Setup base packages
 RUN apk add --no-cache \
     coreutils \
