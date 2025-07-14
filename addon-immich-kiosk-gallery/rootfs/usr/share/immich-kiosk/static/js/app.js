@@ -21,6 +21,11 @@ function setupEventListeners() {
     if (loadMemoriesBtn) {
         loadMemoriesBtn.addEventListener('click', loadMemories);
     }
+    
+    const loadAlbumsBtn = document.getElementById('load-albums');
+    if (loadAlbumsBtn) {
+        loadAlbumsBtn.addEventListener('click', loadAlbums);
+    }
 }
 
 async function checkServerHealth() {
@@ -49,6 +54,7 @@ async function loadConfiguration() {
 async function checkImmichStatus() {
     const statusDiv = document.getElementById('immich-status');
     const memoriesSection = document.getElementById('memories-section');
+    const albumsSection = document.getElementById('albums-section');
     
     try {
         const response = await fetch('/api/immich/status');
@@ -58,15 +64,18 @@ async function checkImmichStatus() {
             statusDiv.innerHTML = '✅ Pripojený k Immich serveru';
             statusDiv.className = 'connected';
             memoriesSection.style.display = 'block';
+            albumsSection.style.display = 'block';
         } else {
             statusDiv.innerHTML = `❌ Nepripojený: ${status.error || 'Neznáma chyba'}`;
             statusDiv.className = 'error';
             memoriesSection.style.display = 'none';
+            albumsSection.style.display = 'none';
         }
     } catch (error) {
         statusDiv.innerHTML = '❌ Chyba pri kontrole pripojenia';
         statusDiv.className = 'error';
         memoriesSection.style.display = 'none';
+        albumsSection.style.display = 'none';
         console.error('Immich status check failed:', error);
     }
 }
@@ -264,19 +273,37 @@ function updateSlide() {
 function handleKeyboard(event) {
     if (currentMemories.length === 0) return;
     
+    // Check if we're in albums mode or memories mode
+    const albumsContainer = document.getElementById('albums-container');
+    const isAlbumsMode = albumsContainer && albumsContainer.innerHTML.includes('slideshow-viewer-albums');
+    
     switch(event.key) {
         case 'ArrowLeft':
-            previousSlide();
+            if (isAlbumsMode) {
+                previousAlbumsSlide();
+            } else {
+                previousSlide();
+            }
             break;
         case 'ArrowRight':
-            nextSlide();
+            if (isAlbumsMode) {
+                nextAlbumsSlide();
+            } else {
+                nextSlide();
+            }
             break;
         case ' ':
             event.preventDefault();
-            toggleSlideshow();
+            if (isAlbumsMode) {
+                toggleAlbumsSlideshow();
+            } else {
+                toggleSlideshow();
+            }
             break;
         case 'Escape':
-            if (slideInterval) {
+            if (isAlbumsMode && albumsSlideInterval) {
+                toggleAlbumsSlideshow();
+            } else if (slideInterval) {
                 toggleSlideshow();
             }
             break;
@@ -315,7 +342,12 @@ function cleanupSlideshow() {
         clearInterval(slideInterval);
         slideInterval = null;
     }
+    if (albumsSlideInterval) {
+        clearInterval(albumsSlideInterval);
+        albumsSlideInterval = null;
+    }
     currentSlideIndex = 0;
+    albumsSlideIndex = 0;
     currentMemories = [];
     
     // Remove keyboard listener when not needed
@@ -325,11 +357,226 @@ function cleanupSlideshow() {
 // Add cleanup when leaving the page
 window.addEventListener('beforeunload', cleanupSlideshow);
 
-// Auto-refresh memories every 5 minutes to check for new active memories
+// Auto-refresh memories and albums every 5 minutes
 setInterval(() => {
-    const container = document.getElementById('memories-container');
-    if (container && currentMemories.length > 0) {
+    const memoriesContainer = document.getElementById('memories-container');
+    const albumsContainer = document.getElementById('albums-container');
+    
+    if (memoriesContainer && currentMemories.length > 0) {
         log('Auto-refreshing memories...');
         loadMemories();
     }
+    
+    if (albumsContainer && albumsContainer.innerHTML.includes('slideshow-container')) {
+        log('Auto-refreshing albums...');
+        loadAlbums();
+    }
 }, 5 * 60 * 1000); // 5 minutes
+
+async function loadAlbums() {
+    const button = document.getElementById('load-albums');
+    const container = document.getElementById('albums-container');
+    
+    button.disabled = true;
+    button.textContent = 'Načítavam...';
+    container.innerHTML = '<div class="loading">Načítavam albumy z Immich...</div>';
+    
+    try {
+        const response = await fetch('/api/albums');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayAlbums(data.albums);
+            log(`Načítané ${data.album_count} albumov s ${data.total_assets} fotkami`);
+        } else {
+            container.innerHTML = `<div class="error">Chyba: ${data.error}</div>`;
+        }
+    } catch (error) {
+        container.innerHTML = '<div class="error">Chyba pri načítavaní albumov</div>';
+        console.error('Failed to load albums:', error);
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Načítať Albumy';
+    }
+}
+
+function displayAlbums(albums) {
+    const container = document.getElementById('albums-container');
+    
+    if (albums.length === 0) {
+        container.innerHTML = '<div class="info">Žiadne albumy nenájdené</div>';
+        return;
+    }
+    
+    // Collect all assets from all albums for slideshow
+    const allAssets = [];
+    albums.forEach(album => {
+        album.assets.forEach(asset => {
+            allAssets.push(asset);
+        });
+    });
+    
+    if (allAssets.length === 0) {
+        container.innerHTML = '<div class="info">Žiadne fotky v albumoch nenájdené</div>';
+        return;
+    }
+    
+    // Set current memories to album assets for slideshow
+    currentMemories = allAssets;
+    
+    // Create albums display with slideshow
+    container.innerHTML = `
+        <div class="albums-summary">
+            <h3>Albumy (${albums.length})</h3>
+            <p>Celkovo ${allAssets.length} fotiek zo všetkých albumov</p>
+            ${albums.map(album => `
+                <div class="album-info">
+                    <strong>${album.name}</strong> - ${album.assets.length} fotiek
+                    ${album.description ? `<br><span class="album-desc">${album.description}</span>` : ''}
+                </div>
+            `).join('')}
+        </div>
+        
+        <div class="slideshow-container">
+            <div class="slideshow-controls">
+                <button id="toggle-slideshow-albums" class="control-btn">▶️ Spustiť slideshow</button>
+                <button id="prev-slide-albums" class="control-btn">◀️ Predchádzajúci</button>
+                <button id="next-slide-albums" class="control-btn">▶️ Nasledujúci</button>
+                <span class="slide-counter-albums">1 / ${allAssets.length}</span>
+            </div>
+            <div class="slideshow-viewer-albums">
+                <div class="slide active">
+                    <img src="/api/proxy/image/${allAssets[0].id}" 
+                         onerror="this.src='${allAssets[0].thumbnail_url}'"
+                         alt="${allAssets[0].original_filename}" />
+                    <div class="slide-info">
+                        <div class="filename">${allAssets[0].original_filename}</div>
+                        <div class="date">${formatDate(allAssets[0].created_at)}</div>
+                        <div class="album-name">Album: ${allAssets[0].album_name}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="slideshow-thumbnails">
+                ${allAssets.map((asset, index) => `
+                    <div class="thumbnail ${index === 0 ? 'active' : ''}" data-slide="${index}">
+                        <img src="${asset.thumbnail_url}" alt="${asset.original_filename}" />
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    // Setup slideshow for albums
+    setupAlbumsSlideshow();
+}
+
+function setupAlbumsSlideshow() {
+    const toggleBtn = document.getElementById('toggle-slideshow-albums');
+    const prevBtn = document.getElementById('prev-slide-albums');
+    const nextBtn = document.getElementById('next-slide-albums');
+    const thumbnails = document.querySelectorAll('#albums-container .thumbnail');
+    
+    toggleBtn.addEventListener('click', toggleAlbumsSlideshow);
+    prevBtn.addEventListener('click', previousAlbumsSlide);
+    nextBtn.addEventListener('click', nextAlbumsSlide);
+    
+    thumbnails.forEach((thumb, index) => {
+        thumb.addEventListener('click', () => goToAlbumsSlide(index));
+    });
+}
+
+let albumsSlideIndex = 0;
+let albumsSlideInterval = null;
+
+function toggleAlbumsSlideshow() {
+    const toggleBtn = document.getElementById('toggle-slideshow-albums');
+    
+    if (albumsSlideInterval) {
+        clearInterval(albumsSlideInterval);
+        albumsSlideInterval = null;
+        toggleBtn.textContent = '▶️ Spustiť slideshow';
+        toggleBtn.classList.remove('playing');
+    } else {
+        albumsSlideInterval = setInterval(nextAlbumsSlide, 5000);
+        toggleBtn.textContent = '⏸️ Zastaviť slideshow';
+        toggleBtn.classList.add('playing');
+    }
+}
+
+function nextAlbumsSlide() {
+    if (currentMemories.length === 0) return;
+    
+    albumsSlideIndex = (albumsSlideIndex + 1) % currentMemories.length;
+    updateAlbumsSlide();
+}
+
+function previousAlbumsSlide() {
+    if (currentMemories.length === 0) return;
+    
+    albumsSlideIndex = albumsSlideIndex === 0 ? currentMemories.length - 1 : albumsSlideIndex - 1;
+    updateAlbumsSlide();
+}
+
+function goToAlbumsSlide(index) {
+    if (index >= 0 && index < currentMemories.length) {
+        albumsSlideIndex = index;
+        updateAlbumsSlide();
+    }
+}
+
+function updateAlbumsSlide() {
+    const viewer = document.querySelector('.slideshow-viewer-albums');
+    const counter = document.querySelector('.slide-counter-albums');
+    const thumbnails = document.querySelectorAll('#albums-container .thumbnail');
+    
+    if (!viewer || !currentMemories[albumsSlideIndex]) return;
+    
+    const asset = currentMemories[albumsSlideIndex];
+    
+    // Show loading state first
+    viewer.innerHTML = `
+        <div class="slide active">
+            <div class="slide-loading">Načítavam obrázok...</div>
+        </div>
+    `;
+    
+    // Create image with error handling
+    const img = new Image();
+    img.onload = function() {
+        viewer.innerHTML = `
+            <div class="slide active">
+                <img src="${img.src}" alt="${asset.original_filename}" />
+                <div class="slide-info">
+                    <div class="filename">${asset.original_filename}</div>
+                    <div class="date">${formatDate(asset.created_at)}</div>
+                    <div class="album-name">Album: ${asset.album_name}</div>
+                </div>
+            </div>
+        `;
+    };
+    
+    img.onerror = function() {
+        viewer.innerHTML = `
+            <div class="slide active">
+                <img src="${asset.thumbnail_url}" alt="${asset.original_filename}" />
+                <div class="slide-info">
+                    <div class="filename">${asset.original_filename}</div>
+                    <div class="date">${formatDate(asset.created_at)}</div>
+                    <div class="album-name">Album: ${asset.album_name} (náhľad)</div>
+                </div>
+            </div>
+        `;
+    };
+    
+    img.src = `/api/proxy/image/${asset.id}`;
+    
+    // Update counter
+    if (counter) {
+        counter.textContent = `${albumsSlideIndex + 1} / ${currentMemories.length}`;
+    }
+    
+    // Update active thumbnail
+    thumbnails.forEach((thumb, index) => {
+        thumb.classList.toggle('active', index === albumsSlideIndex);
+    });
+}

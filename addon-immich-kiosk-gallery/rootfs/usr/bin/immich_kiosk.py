@@ -90,6 +90,67 @@ class ImmichAPIClient:
             logger.error(f"Error fetching image {asset_id}: {e}")
             return None, None
 
+    def get_albums(self):
+        """Get all albums from Immich API"""
+        try:
+            logger.info("Fetching albums from Immich API...")
+            response = self.session.get(f"{self.base_url}/api/albums", timeout=30)
+            
+            if response.status_code == 200:
+                albums = response.json()
+                logger.info(f"Retrieved {len(albums)} albums from Immich")
+                return albums
+            else:
+                logger.error(f"Failed to fetch albums: HTTP {response.status_code}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error fetching albums: {e}")
+            return []
+    
+    def get_album_assets(self, album_id):
+        """Get assets from a specific album"""
+        try:
+            logger.info(f"Fetching assets from album {album_id}...")
+            response = self.session.get(f"{self.base_url}/api/albums/{album_id}", timeout=30)
+            
+            if response.status_code == 200:
+                album_data = response.json()
+                assets = album_data.get('assets', [])
+                logger.info(f"Retrieved {len(assets)} assets from album {album_id}")
+                return assets
+            else:
+                logger.error(f"Failed to fetch album {album_id}: HTTP {response.status_code}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error fetching album {album_id}: {e}")
+            return []
+    
+    def find_albums_by_name(self, album_names):
+        """Find albums by their names and return their IDs"""
+        try:
+            all_albums = self.get_albums()
+            found_albums = []
+            
+            for album in all_albums:
+                album_name = album.get('albumName', '')
+                if album_name in album_names:
+                    found_albums.append({
+                        'id': album.get('id'),
+                        'name': album_name,
+                        'assetCount': album.get('assetCount', 0),
+                        'description': album.get('description', ''),
+                        'createdAt': album.get('createdAt')
+                    })
+                    logger.info(f"Found album: {album_name} (ID: {album.get('id')}, Assets: {album.get('assetCount', 0)})")
+            
+            return found_albums
+            
+        except Exception as e:
+            logger.error(f"Error finding albums by name: {e}")
+            return []
+
 # Load configuration
 def load_config():
     """Load configuration from Home Assistant options"""
@@ -301,6 +362,83 @@ def proxy_full_image(asset_id):
     except Exception as e:
         logger.error(f"Error in proxy_full_image for {asset_id}: {e}")
         return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/albums')
+def api_albums():
+    """API endpoint to get albums and their assets from Immich"""
+    if not immich_client:
+        return jsonify({
+            'success': False,
+            'error': 'Immich not configured or connection failed',
+            'albums': []
+        }), 400
+    
+    if not config.get('immich_show_albums', True):
+        return jsonify({
+            'success': False,
+            'error': 'Albums are disabled in configuration',
+            'albums': []
+        }), 400
+    
+    album_names = config.get('immich_albums', [])
+    if not album_names:
+        return jsonify({
+            'success': False,
+            'error': 'No albums configured to display',
+            'albums': []
+        }), 400
+    
+    try:
+        # Find albums by their names
+        found_albums = immich_client.find_albums_by_name(album_names)
+        
+        processed_albums = []
+        total_assets = 0
+        
+        for album in found_albums:
+            # Get assets from each album
+            assets = immich_client.get_album_assets(album['id'])
+            
+            processed_assets = []
+            for asset in assets[:20]:  # Limit to first 20 assets per album
+                processed_asset = {
+                    'id': asset.get('id'),
+                    'type': asset.get('type'),
+                    'thumbnail_url': immich_client.get_asset_thumbnail_url(asset.get('id')),
+                    'created_at': asset.get('fileCreatedAt'),
+                    'original_filename': asset.get('originalFileName', ''),
+                    'album_id': album['id'],
+                    'album_name': album['name']
+                }
+                processed_assets.append(processed_asset)
+                total_assets += 1
+            
+            processed_album = {
+                'id': album['id'],
+                'name': album['name'],
+                'description': album.get('description', ''),
+                'asset_count': album.get('assetCount', 0),
+                'created_at': album.get('createdAt'),
+                'assets': processed_assets
+            }
+            processed_albums.append(processed_album)
+        
+        return jsonify({
+            'success': True,
+            'albums': processed_albums,
+            'album_count': len(processed_albums),
+            'total_assets': total_assets,
+            'configured_albums': album_names,
+            'found_albums': [album['name'] for album in found_albums]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in api_albums: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'albums': []
+        }), 500
 
 @app.route('/api/immich/status')
 def api_immich_status():

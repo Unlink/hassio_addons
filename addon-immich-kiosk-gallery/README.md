@@ -84,6 +84,7 @@ addon-immich-kiosk-gallery/
 ### Immich integrácia
 - `GET /api/immich/status` - Status pripojenia k Immich
 - `GET /api/memories` - Aktívne memories (filtrované)
+- `GET /api/albums` - Fotky z nakonfigurovaných albumov
 
 ### Proxy endpointy
 - `GET /api/proxy/thumbnail/<asset_id>?size=<size>` - Thumbnail proxy
@@ -96,9 +97,16 @@ immich_url: "http://your-immich-instance"
 immich_api_key: "your-api-key" 
 immich_show_memories: true
 immich_show_albums: true
-immich_albums: ["Album1", "Album2"]
+immich_albums: ["Family Photos", "Vacation", "Wedding"]
 log_level: "info"
 ```
+
+### Príklad použitia albumov
+
+1. **Vytvorte albumy v Immich** s názvami ako "Family Photos", "Vacation", atď.
+2. **Nastavte v konfigurácii** pole `immich_albums` s presne týmito názvami
+3. **Povoľte albumy** nastavením `immich_show_albums: true`
+4. **Addon automaticky načíta** fotky zo všetkých nakonfigurovaných albumov
 
 ## Bezpečnosť
 

@@ -469,6 +469,66 @@ footer {
     border: 1px solid #ff6b6b;
 }
 
+/* Albums styles */
+.albums-summary {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-left: 4px solid #667eea;
+}
+
+.albums-summary h3 {
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.albums-summary p {
+    margin-bottom: 15px;
+    color: #666;
+}
+
+.album-info {
+    background: white;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.album-info:last-child {
+    margin-bottom: 0;
+}
+
+.album-desc {
+    font-style: italic;
+    color: #777;
+    font-size: 0.9rem;
+}
+
+.slide-info .album-name {
+    font-size: 0.9rem;
+    color: #667eea;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+/* Duplicate slideshow styles for albums (to avoid conflicts) */
+.slideshow-viewer-albums {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    background: #000;
+    overflow: hidden;
+}
+
+.slide-counter-albums {
+    margin-left: auto;
+    font-weight: 600;
+    color: #666;
+    font-size: 0.9rem;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {
