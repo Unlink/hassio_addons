@@ -53,10 +53,6 @@
       opacity: 0;
       transition: opacity 0.4s cubic-bezier(.4,0,.2,1);
     }
-    #image-frame img.visible {
-      opacity: 1;
-      transition: opacity 0.4s cubic-bezier(.4,0,.2,1);
-    }
 
 
     #image-frame img#gallery-img {
@@ -188,7 +184,6 @@
         imgPreviewB.style.opacity = 0;
         imgPreviewB.src = '';
         document.getElementById('caption').textContent = 'No images.';
-        isTransitioning = false;
         return;
       }
       currentIndex = (index + images.length) % images.length;
@@ -216,26 +211,29 @@
       imgPreview.style.transition = 'none';
       imgPreview.style.opacity = 0;
       imgPreview.src = previewUrl;
-      imgPreview.style.zIndex = 2;
-      imgPreview.style.visibility = 'visible';
-      imgPreviewOld.style.opacity = 0;
-      imgPreviewOld.style.visibility = 'hidden';
-      img.classList.remove('visible');
+      imgPreview.style.zIndex = 3;
       // Fade in new preview
       imgPreview.onload = () => {
+        //Show new preview
         imgPreview.style.transition = 'opacity 0.4s';
         imgPreview.style.opacity = 1;
-        // 2. Hide current image immediately to avoid flicker
+        
+        //Unfade old preview
+        imgPreviewOld.style.zIndex = 1;
+        imgPreviewOld.style.opacity = 0;
+
+        //Hide current image
         img.src = '';
+        img.style.transition = 'none';
+        img.style.opacity = 0;
+        img.zIndex = 1;
+
         // 3. Start loading full image in background
         img.onload = () => {
-          img.classList.add('visible');
-          imgPreview.style.opacity = 0;
-          setTimeout(() => {
-            imgPreview.style.visibility = 'hidden';
-            imgPreview.src = '';
-            isTransitioning = false;
-          }, 400);
+          img.style.opacity = 1;
+          img.zIndex = 3;
+          imgPreview.zIndex = 2;
+          isTransitioning = false;
         };
         img.src = url;
         document.getElementById('caption').innerHTML = caption;
