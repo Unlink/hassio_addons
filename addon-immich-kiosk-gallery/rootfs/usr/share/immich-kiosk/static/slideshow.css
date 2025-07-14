@@ -32,32 +32,35 @@ body, html {
   transition: opacity 0.5s cubic-bezier(.4,0,.2,1), transform 0.6s cubic-bezier(.4,0,.2,1);
   will-change: opacity, transform;
   position: absolute;
-  left: 0; top: 0; right: 0; bottom: 0;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  /* transform will be overridden by slide-* classes */
 }
 
 .slide-image.slide-in-right {
   opacity: 1;
-  transform: translateX(100vw);
+  transform: translate(-50%, -50%) translateX(100vw);
   z-index: 2;
 }
 .slide-image.slide-in-left {
   opacity: 1;
-  transform: translateX(-100vw);
+  transform: translate(-50%, -50%) translateX(-100vw);
   z-index: 2;
 }
 .slide-image.slide-center {
   opacity: 1;
-  transform: translateX(0);
+  transform: translate(-50%, -50%) translateX(0);
   z-index: 3;
 }
 .slide-image.slide-out-left {
   opacity: 0.2;
-  transform: translateX(-100vw);
+  transform: translate(-50%, -50%) translateX(-100vw);
   z-index: 1;
 }
 .slide-image.slide-out-right {
   opacity: 0.2;
-  transform: translateX(100vw);
+  transform: translate(-50%, -50%) translateX(100vw);
   z-index: 1;
 }
 
