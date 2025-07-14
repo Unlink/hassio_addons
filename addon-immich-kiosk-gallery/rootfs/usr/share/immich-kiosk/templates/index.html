@@ -7,22 +7,28 @@
   <link rel="stylesheet" href="/static/slideshow.css">
 </head>
 <body>
-  <div id="memories-label">Spomienky</div>
-  <div id="switcher" style="display:none;"></div>
-  <div id="slideshow-container">
-    <img id="slide-img-prev" class="slide-image" src="" alt="Previous" style="display:none;" />
-    <img id="slide-img" class="slide-image" src="" alt="Slideshow" style="display:none;" />
-    <img id="slide-img-preview" class="slide-image" src="" alt="Preview" style="display:none; filter: blur(2px) brightness(0.8); z-index:0;" />
-  </div>
-  <div id="photo-meta">
-    <div id="photo-date"></div>
-    <div id="photo-author"></div>
-    <div id="photo-location"></div>
-    <div id="photo-index"></div>
-  </div>
-  <div id="loading">Načítavam fotky...</div>
+  <header class="gallery-header">
+    <div id="collection-switcher" class="collection-switcher"></div>
+    <div id="memories-label" class="memories-label">Spomienky</div>
+  </header>
+  <main>
+    <div id="slideshow" class="slideshow">
+      <img id="slide-img-prev" class="slide-image" alt="Previous" />
+      <img id="slide-img" class="slide-image" alt="Current" />
+      <img id="slide-img-preview" class="slide-image slide-preview" alt="Preview" />
+      <div id="loading" class="loading">Načítavam fotky...</div>
+    </div>
+    <div id="photo-meta" class="photo-meta">
+      <span id="photo-date"></span>
+      <span id="photo-author"></span>
+      <span id="photo-location"></span>
+      <span id="photo-index"></span>
+    </div>
+  </main>
   <script>
-    const switcher = document.getElementById('switcher');
+    // Modern, robust, and simple slideshow logic
+    // --- Immich Kiosk Gallery Slideshow ---
+    const switcher = document.getElementById('collection-switcher');
     const memoriesLabel = document.getElementById('memories-label');
     const slideImg = document.getElementById('slide-img');
     const slideImgPrev = document.getElementById('slide-img-prev');
@@ -33,95 +39,76 @@
     const photoLocation = document.getElementById('photo-location');
     const photoIndex = document.getElementById('photo-index');
 
-    let memories = [];
-    let randomPhotos = [];
+    let collections = {
+      memories: [],
+      random: []
+    };
     let currentCollection = 'memories';
-    let slideshowPhotos = [];
     let slideIndex = 0;
     let slideTimer = null;
-    let availableCollections = [];
+    let lastSlideIndex = 0;
+    let preloadCache = {};
 
     function showLoading(show) {
       loading.style.display = show ? 'block' : 'none';
     }
 
-    async function fetchCollection(url) {
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.success) return data;
-        return { success: false, items: [] };
-      } catch {
-        return { success: false, items: [] };
-      }
-    }
-
-    async function loadPhotos() {
+    async function fetchCollections() {
       showLoading(true);
-      // Fetch both collections in parallel
       const [memoriesRes, randomRes] = await Promise.all([
         fetch('/api/memories').then(r => r.json()),
         fetch('/api/randomPhotos').then(r => r.json())
       ]);
-      memories = (memoriesRes.success && memoriesRes.memories && memoriesRes.memories.length) ? memoriesRes.memories : [];
-      randomPhotos = (randomRes.success && randomRes.photos && randomRes.photos.length) ? randomRes.photos : [];
-
-      availableCollections = [];
-      if (memories.length) availableCollections.push('memories');
-      if (randomPhotos.length) availableCollections.push('random');
-
-      // Set default collection
-      if (!availableCollections.includes(currentCollection)) {
-        currentCollection = availableCollections[0] || 'memories';
-      }
-
-      renderSwitcher();
-      updateSlideshowPhotos();
+      collections.memories = (memoriesRes.success && memoriesRes.memories) ? memoriesRes.memories : [];
+      collections.random = (randomRes.success && randomRes.photos) ? randomRes.photos : [];
       showLoading(false);
-      startSlideshow();
+    }
+
+    function availableCollections() {
+      return Object.entries(collections)
+        .filter(([k, v]) => Array.isArray(v) && v.length)
+        .map(([k]) => k);
     }
 
     function renderSwitcher() {
-      if (availableCollections.length < 2) {
+      const avail = availableCollections();
+      if (avail.length < 2) {
         switcher.style.display = 'none';
         return;
       }
       switcher.innerHTML = '';
-      if (availableCollections.includes('memories')) {
+      avail.forEach(col => {
         const label = document.createElement('label');
-        label.innerHTML = `<input type="radio" name="collection" value="memories" ${currentCollection==='memories'?'checked':''}>Spomienky`;
-        label.onclick = () => switchCollection('memories');
+        label.className = 'switch-label';
+        label.innerHTML = `<input type="radio" name="collection" value="${col}" ${currentCollection===col?'checked':''}>${col==='memories'?'Spomienky':'Náhodné fotky'}`;
+        label.onclick = () => switchCollection(col);
         switcher.appendChild(label);
-      }
-      if (availableCollections.includes('random')) {
-        const label = document.createElement('label');
-        label.innerHTML = `<input type="radio" name="collection" value="random" ${currentCollection==='random'?'checked':''}>Náhodné fotky`;
-        label.onclick = () => switchCollection('random');
-        switcher.appendChild(label);
-      }
+      });
       switcher.style.display = 'flex';
     }
 
     function switchCollection(col) {
       if (col === currentCollection) return;
       currentCollection = col;
-      updateSlideshowPhotos();
-      startSlideshow();
-    }
-
-    function updateSlideshowPhotos() {
-      if (currentCollection === 'memories') {
-        slideshowPhotos = memories;
-        memoriesLabel.classList.add('active');
-      } else {
-        slideshowPhotos = randomPhotos;
-        memoriesLabel.classList.remove('active');
-      }
       slideIndex = 0;
+      updateMemoriesLabel();
+      showSlide(slideIndex, true);
+      restartSlideshow();
     }
 
-    // Preload cache for full images
-    const preloadCache = {};
+    function updateMemoriesLabel() {
+      if (currentCollection === 'memories') {
+        memoriesLabel.classList.add('active');
+        memoriesLabel.style.display = 'block';
+      } else {
+        memoriesLabel.classList.remove('active');
+        memoriesLabel.style.display = 'none';
+      }
+    }
+
+    function getCurrentPhotos() {
+      return collections[currentCollection] || [];
+    }
 
     function preloadImage(url) {
       if (!url || preloadCache[url]) return;
@@ -130,50 +117,41 @@
       preloadCache[url] = img;
     }
 
-
-    // Helper for slide direction
-    let lastSlideIndex = 0;
-
-    function showSlide(idx) {
-      if (!slideshowPhotos.length) {
-        slideImg.style.display = 'none';
-        slideImgPreview.style.display = 'none';
-        slideImgPrev.style.display = 'none';
-        photoDate.style.display = 'none';
-        photoAuthor.style.display = 'none';
-        photoLocation.style.display = 'none';
-        photoIndex.style.display = 'none';
+    function showSlide(idx, instant = false) {
+      const photos = getCurrentPhotos();
+      if (!photos.length) {
+        [slideImg, slideImgPrev, slideImgPreview].forEach(img => img.style.display = 'none');
+        [photoDate, photoAuthor, photoLocation, photoIndex].forEach(el => el.style.display = 'none');
         return;
       }
-      const photo = slideshowPhotos[idx % slideshowPhotos.length];
-      const prevPhoto = slideshowPhotos[lastSlideIndex % slideshowPhotos.length];
-      const direction = idx > lastSlideIndex || (idx === 0 && lastSlideIndex === slideshowPhotos.length - 1) ? 'right' : 'left';
+      const photo = photos[idx % photos.length];
+      const prevPhoto = photos[lastSlideIndex % photos.length];
+      const direction = idx > lastSlideIndex || (idx === 0 && lastSlideIndex === photos.length - 1) ? 'right' : 'left';
 
-      // Prepare previous image for slide-out
-      slideImgPrev.src = slideImg.src;
-      slideImgPrev.style.display = slideImg.src ? 'block' : 'none';
-      slideImgPrev.className = 'slide-image slide-center';
-
-      // Show preview first
+      // Show blurred preview
       slideImgPreview.src = photo.thumbnail_url || '';
       slideImgPreview.style.display = photo.thumbnail_url ? 'block' : 'none';
 
+      // Prepare previous image for slide-out
+      slideImgPrev.src = slideImg.src || '';
+      slideImgPrev.style.display = slideImg.src ? 'block' : 'none';
+      slideImgPrev.className = 'slide-image slide-center';
+
       // Prepare new image for slide-in
-      slideImg.className = 'slide-image ' + (direction === 'right' ? 'slide-in-right' : 'slide-in-left');
+      slideImg.className = 'slide-image ' + (instant ? 'slide-center' : (direction === 'right' ? 'slide-in-right' : 'slide-in-left'));
       slideImg.style.display = 'block';
       slideImg.src = photo.full_image_url || photo.thumbnail_url;
 
-      // After full image loads, animate slide
+      // Animate after load
       slideImg.onload = () => {
         slideImgPreview.style.display = 'none';
-        // Animate
         setTimeout(() => {
           slideImg.className = 'slide-image slide-center';
           slideImgPrev.className = 'slide-image ' + (direction === 'right' ? 'slide-out-left' : 'slide-out-right');
-        }, 30);
+        }, instant ? 0 : 30);
         setTimeout(() => {
           slideImgPrev.style.display = 'none';
-        }, 600);
+        }, instant ? 0 : 600);
       };
       // If cached, trigger animation immediately
       if (slideImg.complete) {
@@ -181,22 +159,21 @@
         setTimeout(() => {
           slideImg.className = 'slide-image slide-center';
           slideImgPrev.className = 'slide-image ' + (direction === 'right' ? 'slide-out-left' : 'slide-out-right');
-        }, 30);
+        }, instant ? 0 : 30);
         setTimeout(() => {
           slideImgPrev.style.display = 'none';
-        }, 600);
+        }, instant ? 0 : 600);
       }
 
       // Preload next image
-      if (slideshowPhotos.length > 1) {
-        const nextIdx = (idx + 1) % slideshowPhotos.length;
-        const nextPhoto = slideshowPhotos[nextIdx];
-        if (nextPhoto && nextPhoto.full_image_url) {
-          preloadImage(nextPhoto.full_image_url);
-        }
+      if (photos.length > 1) {
+        const nextIdx = (idx + 1) % photos.length;
+        const nextPhoto = photos[nextIdx];
+        if (nextPhoto && nextPhoto.full_image_url) preloadImage(nextPhoto.full_image_url);
       }
 
-      // Show date
+      // Metadáta
+      // Date
       let dateStr = '';
       if (photo.file_created_at) {
         const d = new Date(photo.file_created_at);
@@ -204,165 +181,112 @@
           dateStr = d.toLocaleDateString('sk-SK', { year: 'numeric', month: 'long', day: 'numeric' });
         }
       }
-      if (dateStr) {
-        photoDate.textContent = dateStr;
-        photoDate.style.display = 'block';
-      } else {
-        photoDate.style.display = 'none';
-      }
-
-      // Show author
-      if (photo.author) {
-        photoAuthor.textContent = `Autor: ${photo.author}`;
-        photoAuthor.style.display = 'block';
-      } else {
-        photoAuthor.style.display = 'none';
-      }
-
-      // Show location
+      photoDate.textContent = dateStr;
+      photoDate.style.display = dateStr ? 'inline' : 'none';
+      // Author
+      photoAuthor.textContent = photo.author ? `Autor: ${photo.author}` : '';
+      photoAuthor.style.display = photo.author ? 'inline' : 'none';
+      // Location
       let loc = '';
       if (photo.city) loc += photo.city;
       if (photo.state) loc += (loc ? ', ' : '') + photo.state;
       if (photo.country) loc += (loc ? ', ' : '') + photo.country;
-      if (loc) {
-        photoLocation.textContent = `Lokácia: ${loc}`;
-        photoLocation.style.display = 'block';
-      } else {
-        photoLocation.style.display = 'none';
-      }
-
-      // Show index indicator
-      if (slideshowPhotos.length > 1) {
-        photoIndex.textContent = `${(idx % slideshowPhotos.length) + 1} / ${slideshowPhotos.length}`;
-        photoIndex.style.display = 'block';
+      photoLocation.textContent = loc ? `Lokácia: ${loc}` : '';
+      photoLocation.style.display = loc ? 'inline' : 'none';
+      // Index
+      if (photos.length > 1) {
+        photoIndex.textContent = `${(idx % photos.length) + 1} / ${photos.length}`;
+        photoIndex.style.display = 'inline';
       } else {
         photoIndex.style.display = 'none';
       }
 
       lastSlideIndex = idx;
     }
-    // Improved mouse swipe support
-    let mouseDown = false;
-    let mouseStartX = 0;
-    let mouseStartY = 0;
-    let mouseMoved = false;
-    let swipeLocked = false;
-
-    slideImg.addEventListener('mousedown', function(e) {
-      if (swipeLocked) return;
-      mouseDown = true;
-      mouseMoved = false;
-      mouseStartX = e.clientX;
-      mouseStartY = e.clientY;
-    });
-    window.addEventListener('mousemove', function(e) {
-      if (!mouseDown) return;
-      mouseMoved = true;
-    });
-    window.addEventListener('mouseup', function(e) {
-      if (!mouseDown || swipeLocked) return;
-      mouseDown = false;
-      if (!mouseMoved) return;
-      const dx = e.clientX - mouseStartX;
-      const dy = Math.abs(e.clientY - mouseStartY);
-      if (Math.abs(dx) > 50 && dy < 80) {
-        swipeLocked = true;
-        if (dx < 0) {
-          nextSlide();
-        } else {
-          prevSlide();
-        }
-        setTimeout(() => { swipeLocked = false; }, 650);
-        if (slideTimer) {
-          clearInterval(slideTimer);
-          slideTimer = setInterval(nextSlide, 6000);
-        }
-      }
-    });
-
 
     function nextSlide() {
-      if (!slideshowPhotos.length) return;
-      slideIndex = (slideIndex + 1) % slideshowPhotos.length;
+      const photos = getCurrentPhotos();
+      if (!photos.length) return;
+      slideIndex = (slideIndex + 1) % photos.length;
       showSlide(slideIndex);
     }
 
     function prevSlide() {
-      if (!slideshowPhotos.length) return;
-      slideIndex = (slideIndex - 1 + slideshowPhotos.length) % slideshowPhotos.length;
+      const photos = getCurrentPhotos();
+      if (!photos.length) return;
+      slideIndex = (slideIndex - 1 + photos.length) % photos.length;
       showSlide(slideIndex);
     }
 
-    function startSlideshow() {
+    function restartSlideshow() {
       if (slideTimer) clearInterval(slideTimer);
-      if (!slideshowPhotos.length) {
-        slideImg.style.display = 'none';
-        return;
-      }
-      showSlide(slideIndex);
+      const photos = getCurrentPhotos();
+      if (!photos.length) return;
       slideTimer = setInterval(nextSlide, 6000);
     }
 
-    // Improved touch swipe support
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchMoved = false;
-    let touchSwipeLocked = false;
-    const minSwipeDistance = 50;
+    // --- Input Handlers ---
+    // Mouse swipe
+    let mouseDown = false, mouseStartX = 0, mouseStartY = 0, mouseMoved = false, swipeLocked = false;
+    slideImg.addEventListener('mousedown', e => {
+      if (swipeLocked) return;
+      mouseDown = true; mouseMoved = false;
+      mouseStartX = e.clientX; mouseStartY = e.clientY;
+    });
+    window.addEventListener('mousemove', e => { if (mouseDown) mouseMoved = true; });
+    window.addEventListener('mouseup', e => {
+      if (!mouseDown || swipeLocked) return;
+      mouseDown = false;
+      if (!mouseMoved) return;
+      const dx = e.clientX - mouseStartX, dy = Math.abs(e.clientY - mouseStartY);
+      if (Math.abs(dx) > 50 && dy < 80) {
+        swipeLocked = true;
+        dx < 0 ? nextSlide() : prevSlide();
+        setTimeout(() => { swipeLocked = false; }, 650);
+        restartSlideshow();
+      }
+    });
 
-    slideImg.addEventListener('touchstart', function(e) {
+    // Touch swipe
+    let touchStartX = 0, touchStartY = 0, touchActive = false, touchSwipeLocked = false;
+    slideImg.addEventListener('touchstart', e => {
       if (touchSwipeLocked) return;
       if (e.touches.length === 1) {
+        touchActive = true;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        touchMoved = false;
       }
     });
-    slideImg.addEventListener('touchmove', function(e) {
-      touchMoved = true;
-    });
-    slideImg.addEventListener('touchend', function(e) {
-      if (touchSwipeLocked) return;
-      if (!touchMoved) return;
+    slideImg.addEventListener('touchend', e => {
+      if (touchSwipeLocked || !touchActive) return;
+      touchActive = false;
       if (e.changedTouches.length === 1) {
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-        const dx = touchEndX - touchStartX;
-        const dy = Math.abs(touchEndY - touchStartY);
-        if (Math.abs(dx) > minSwipeDistance && dy < 80) {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+        if (Math.abs(dx) > 50 && dy < 80) {
           touchSwipeLocked = true;
-          if (dx < 0) {
-            nextSlide();
-          } else {
-            prevSlide();
-          }
+          dx < 0 ? nextSlide() : prevSlide();
           setTimeout(() => { touchSwipeLocked = false; }, 650);
-          if (slideTimer) {
-            clearInterval(slideTimer);
-            slideTimer = setInterval(nextSlide, 6000);
-          }
+          restartSlideshow();
         }
       }
     });
 
-    // Also allow left/right arrow keys for navigation
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'ArrowLeft') {
-        prevSlide();
-        if (slideTimer) {
-          clearInterval(slideTimer);
-          slideTimer = setInterval(nextSlide, 6000);
-        }
-      } else if (e.key === 'ArrowRight') {
-        nextSlide();
-        if (slideTimer) {
-          clearInterval(slideTimer);
-          slideTimer = setInterval(nextSlide, 6000);
-        }
-      }
+    // Keyboard
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') { prevSlide(); restartSlideshow(); }
+      else if (e.key === 'ArrowRight') { nextSlide(); restartSlideshow(); }
     });
 
-    window.addEventListener('DOMContentLoaded', loadPhotos);
+    // --- Init ---
+    async function initGallery() {
+      await fetchCollections();
+      renderSwitcher();
+      updateMemoriesLabel();
+      showSlide(slideIndex, true);
+      restartSlideshow();
+    }
+    window.addEventListener('DOMContentLoaded', initGallery);
   </script>
 </body>
 </html>
