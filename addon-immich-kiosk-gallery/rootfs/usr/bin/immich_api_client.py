@@ -166,11 +166,11 @@ class ImmichAPIClient:
             logger.error(f"Error fetching asset info for {asset_id}: {e}")
             return None
     
-    def get_asset_thumbnail_url(self, asset_id: str, size: str = 'preview') -> str:
+    def get_asset_thumbnail_url(self, asset_id: str, size: str = 'thumbnail') -> str:
         """Get thumbnail URL for an asset - using local proxy"""
         return f"/api/proxy/thumbnail/{asset_id}?size={size}"
     
-    def get_asset_image_data(self, asset_id: str, size: str = 'preview') -> Optional[ImageData]:
+    def get_asset_image_data(self, asset_id: str, size: str = 'thumbnail') -> Optional[ImageData]:
         """Get image data from Immich API"""
         try:
             url = f"{self.base_url}/api/assets/{asset_id}/thumbnail?size={size}"

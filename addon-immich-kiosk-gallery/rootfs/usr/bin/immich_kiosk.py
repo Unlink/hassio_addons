@@ -89,7 +89,7 @@ def proxy_thumbnail(asset_id):
         return jsonify({'error': 'Immich not configured'}), 400
     
     try:
-        image_data_obj = immich_client.get_asset_image_data(asset_id, 'preview')
+        image_data_obj = immich_client.get_asset_image_data(asset_id, 'thumbnail')
         
         if image_data_obj is not None:
             response = Response(image_data_obj.content, mimetype=image_data_obj.content_type)
