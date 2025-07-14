@@ -12,12 +12,14 @@
   <div id="slideshow-container">
     <img id="slide-img" class="slide-image" src="" alt="Slideshow" style="display:none;" />
   </div>
+  <div id="photo-date"></div>
   <div id="loading">Načítavam fotky...</div>
   <script>
     const switcher = document.getElementById('switcher');
     const memoriesLabel = document.getElementById('memories-label');
     const slideImg = document.getElementById('slide-img');
     const loading = document.getElementById('loading');
+    const photoDate = document.getElementById('photo-date');
 
     let memories = [];
     let randomPhotos = [];
@@ -109,13 +111,57 @@
     function showSlide(idx) {
       if (!slideshowPhotos.length) {
         slideImg.style.display = 'none';
+        photoDate.style.display = 'none';
         return;
       }
       const photo = slideshowPhotos[idx % slideshowPhotos.length];
-      slideImg.src = photo.full_image_url || photo.thumbnail_url;
-      slideImg.style.display = 'block';
-      slideImg.style.opacity = 0;
-      setTimeout(() => { slideImg.style.opacity = 1; }, 50);
+
+      // Fade out current image
+      slideImg.classList.remove('fade-in');
+      slideImg.classList.add('fade-out');
+
+      setTimeout(() => {
+        slideImg.src = photo.full_image_url || photo.thumbnail_url;
+        slideImg.style.display = 'block';
+        // After image loads, fade in
+        slideImg.onload = () => {
+          slideImg.classList.remove('fade-out');
+          slideImg.classList.add('fade-in');
+        };
+        // If cached, trigger fade-in immediately
+        if (slideImg.complete) {
+          slideImg.classList.remove('fade-out');
+          slideImg.classList.add('fade-in');
+        }
+      }, 200);
+
+      // Show date in right bottom corner
+      let dateStr = '';
+      if (photo.file_created_at) {
+        const d = new Date(photo.file_created_at);
+        if (!isNaN(d.getTime())) {
+          dateStr = d.toLocaleDateString('sk-SK', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+      }
+      if (dateStr) {
+        photoDate.textContent = dateStr;
+        photoDate.style.display = 'block';
+      } else {
+        photoDate.style.display = 'none';
+      }
+    }
+
+
+    function nextSlide() {
+      if (!slideshowPhotos.length) return;
+      slideIndex = (slideIndex + 1) % slideshowPhotos.length;
+      showSlide(slideIndex);
+    }
+
+    function prevSlide() {
+      if (!slideshowPhotos.length) return;
+      slideIndex = (slideIndex - 1 + slideshowPhotos.length) % slideshowPhotos.length;
+      showSlide(slideIndex);
     }
 
     function startSlideshow() {
@@ -125,11 +171,62 @@
         return;
       }
       showSlide(slideIndex);
-      slideTimer = setInterval(() => {
-        slideIndex = (slideIndex + 1) % slideshowPhotos.length;
-        showSlide(slideIndex);
-      }, 6000);
+      slideTimer = setInterval(nextSlide, 6000);
     }
+
+    // Touch/Swipe support
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let touchStartY = 0;
+    let touchEndY = 0;
+    const minSwipeDistance = 50;
+
+    slideImg.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    });
+    slideImg.addEventListener('touchend', function(e) {
+      if (e.changedTouches.length === 1) {
+        touchEndX = e.changedTouches[0].clientX;
+        touchEndY = e.changedTouches[0].clientY;
+        handleSwipe();
+      }
+    });
+
+    function handleSwipe() {
+      const dx = touchEndX - touchStartX;
+      const dy = Math.abs(touchEndY - touchStartY);
+      if (Math.abs(dx) > minSwipeDistance && dy < 80) {
+        if (dx < 0) {
+          nextSlide();
+        } else {
+          prevSlide();
+        }
+        if (slideTimer) {
+          clearInterval(slideTimer);
+          slideTimer = setInterval(nextSlide, 6000);
+        }
+      }
+    }
+
+    // Also allow left/right arrow keys for navigation
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowLeft') {
+        prevSlide();
+        if (slideTimer) {
+          clearInterval(slideTimer);
+          slideTimer = setInterval(nextSlide, 6000);
+        }
+      } else if (e.key === 'ArrowRight') {
+        nextSlide();
+        if (slideTimer) {
+          clearInterval(slideTimer);
+          slideTimer = setInterval(nextSlide, 6000);
+        }
+      }
+    });
 
     window.addEventListener('DOMContentLoaded', loadPhotos);
   </script>
