@@ -36,26 +36,36 @@ html, body {
     .swiper-pagination, .swiper-button-prev, .swiper-button-next {
       z-index: 10;
     }
-    .photo-meta {
-      position: fixed;
-      right: 2vw;
-      bottom: 2vh;
-      background: rgba(0,0,0,0.5);
-      color: #fff;
-      border-radius: 8px;
-      padding: 0.5em 1em;
-      font-size: 1.1em;
-      z-index: 20;
-      display: flex;
-      gap: 1em;
-      pointer-events: none;
-    }
-    .gallery-header {
-      position: fixed;
+    .gallery-overlay {
+      position: absolute;
       top: 0;
       left: 0;
       width: 100vw;
-      z-index: 20;
+      z-index: 30;
+      pointer-events: none;
+    }
+    .photo-meta {
+      position: relative;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      border-radius: 0 0 8px 8px;
+      padding: 0.5em 1em;
+      font-size: 1.1em;
+      z-index: 32;
+      display: flex;
+      gap: 1em;
+      justify-content: flex-end;
+      pointer-events: auto;
+    }
+    .gallery-header {
+      position: relative;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      z-index: 31;
       display: flex;
       justify-content: flex-start;
       align-items: center;
@@ -63,6 +73,7 @@ html, body {
       background: rgba(0,0,0,0.3);
       padding: 0.5em 1em;
       box-sizing: border-box;
+      pointer-events: auto;
     }
     .memories-label {
       color: #fff;

@@ -8,12 +8,20 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
 <body>
-  <header class="gallery-header">
-    <div id="collection-switcher" class="collection-switcher"></div>
-    <div id="memories-label" class="memories-label">Spomienky</div>
-  </header>
   <main>
     <div id="slideshow" class="slideshow">
+      <div class="gallery-overlay">
+        <header class="gallery-header">
+          <div id="collection-switcher" class="collection-switcher"></div>
+          <div id="memories-label" class="memories-label">Spomienky</div>
+        </header>
+        <div id="photo-meta" class="photo-meta">
+          <span id="photo-date"></span>
+          <span id="photo-author"></span>
+          <span id="photo-location"></span>
+          <span id="photo-index"></span>
+        </div>
+      </div>
       <div class="swiper">
         <div class="swiper-wrapper" id="swiper-wrapper"></div>
         <div class="swiper-pagination"></div>
@@ -21,12 +29,6 @@
         <div class="swiper-button-next"></div>
       </div>
       <div id="loading" class="loading">Načítavam fotky...</div>
-    </div>
-    <div id="photo-meta" class="photo-meta">
-      <span id="photo-date"></span>
-      <span id="photo-author"></span>
-      <span id="photo-location"></span>
-      <span id="photo-index"></span>
     </div>
   </main>
   <!-- Swiper JS -->
