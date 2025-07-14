@@ -16,6 +16,7 @@
     <div id="photo-date"></div>
     <div id="photo-author"></div>
     <div id="photo-location"></div>
+    <div id="photo-index"></div>
   </div>
   <div id="loading">Načítavam fotky...</div>
   <script>
@@ -26,6 +27,7 @@
     const photoDate = document.getElementById('photo-date');
     const photoAuthor = document.getElementById('photo-author');
     const photoLocation = document.getElementById('photo-location');
+    const photoIndex = document.getElementById('photo-index');
 
     let memories = [];
     let randomPhotos = [];
@@ -120,6 +122,7 @@
         photoDate.style.display = 'none';
         photoAuthor.style.display = 'none';
         photoLocation.style.display = 'none';
+        photoIndex.style.display = 'none';
         return;
       }
       const photo = slideshowPhotos[idx % slideshowPhotos.length];
@@ -177,7 +180,42 @@
       } else {
         photoLocation.style.display = 'none';
       }
+
+      // Show index indicator
+      if (slideshowPhotos.length > 1) {
+        photoIndex.textContent = `${(idx % slideshowPhotos.length) + 1} / ${slideshowPhotos.length}`;
+        photoIndex.style.display = 'block';
+      } else {
+        photoIndex.style.display = 'none';
+      }
     }
+    // Mouse swipe support
+    let mouseDown = false;
+    let mouseStartX = 0;
+    let mouseStartY = 0;
+
+    slideImg.addEventListener('mousedown', function(e) {
+      mouseDown = true;
+      mouseStartX = e.clientX;
+      mouseStartY = e.clientY;
+    });
+    window.addEventListener('mouseup', function(e) {
+      if (!mouseDown) return;
+      mouseDown = false;
+      const dx = e.clientX - mouseStartX;
+      const dy = Math.abs(e.clientY - mouseStartY);
+      if (Math.abs(dx) > 50 && dy < 80) {
+        if (dx < 0) {
+          nextSlide();
+        } else {
+          prevSlide();
+        }
+        if (slideTimer) {
+          clearInterval(slideTimer);
+          slideTimer = setInterval(nextSlide, 6000);
+        }
+      }
+    });
 
 
     function nextSlide() {

@@ -124,6 +124,14 @@ body, html {
   gap: 2px;
   align-items: flex-end;
 }
+#photo-index {
+  font-size: 0.98em;
+  color: #bbb;
+  margin-top: 2px;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  display: none;
+}
 #photo-date, #photo-author, #photo-location {
   display: none;
   white-space: pre-line;
