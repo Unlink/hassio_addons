@@ -140,7 +140,8 @@
             <polyline points="16,8 10,14 16,20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
-      <img id="gallery-img-preview" src="" alt="Preview image" />
+      <img id="gallery-img-preview-a" src="" alt="Preview image A" />
+      <img id="gallery-img-preview-b" src="" alt="Preview image B" />
       <img id="gallery-img" src="" alt="Gallery image" />
       <button id="next-btn" class="nav-btn" aria-label="Next photo">
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -168,19 +169,24 @@
     }
 
     let isTransitioning = false;
+    let previewToggle = false;
     function showImage(index) {
-      if (isTransitioning) {
-        images.src = ''; // Reset current image to avoid flicker
-      }
+      if (isTransitioning) return;
       isTransitioning = true;
       const images = collections[currentCollection];
       const img = document.getElementById('gallery-img');
-      const imgPreview = document.getElementById('gallery-img-preview');
+      const imgPreviewA = document.getElementById('gallery-img-preview-a');
+      const imgPreviewB = document.getElementById('gallery-img-preview-b');
+      const imgPreview = previewToggle ? imgPreviewA : imgPreviewB;
+      const imgPreviewOld = previewToggle ? imgPreviewB : imgPreviewA;
+      previewToggle = !previewToggle;
       if (!images || images.length === 0) {
         img.classList.remove('visible');
         img.src = '';
-        imgPreview.style.opacity = 0;
-        imgPreview.src = '';
+        imgPreviewA.style.opacity = 0;
+        imgPreviewA.src = '';
+        imgPreviewB.style.opacity = 0;
+        imgPreviewB.src = '';
         document.getElementById('caption').textContent = 'No images.';
         isTransitioning = false;
         return;
@@ -206,14 +212,16 @@
         caption = parts.join(' • ');
       }
 
-      // 1. Show preview above current image, fade it in
+      // 1. Show new preview above current image, fade it in
       imgPreview.style.transition = 'none';
       imgPreview.style.opacity = 0;
       imgPreview.src = previewUrl;
       imgPreview.style.zIndex = 2;
       imgPreview.style.visibility = 'visible';
+      imgPreviewOld.style.opacity = 0;
+      imgPreviewOld.style.visibility = 'hidden';
       img.classList.remove('visible');
-      // Fade in preview
+      // Fade in new preview
       imgPreview.onload = () => {
         imgPreview.style.transition = 'opacity 0.4s';
         imgPreview.style.opacity = 1;
@@ -234,9 +242,12 @@
       };
       // fallback if preview and full are the same
       if (previewUrl === url) {
-        imgPreview.style.opacity = 0;
-        imgPreview.style.visibility = 'hidden';
-        imgPreview.src = '';
+        imgPreviewA.style.opacity = 0;
+        imgPreviewA.style.visibility = 'hidden';
+        imgPreviewA.src = '';
+        imgPreviewB.style.opacity = 0;
+        imgPreviewB.style.visibility = 'hidden';
+        imgPreviewB.src = '';
         img.classList.remove('visible');
         setTimeout(() => {
           img.src = '';
