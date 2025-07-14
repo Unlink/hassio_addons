@@ -1,6 +1,6 @@
 ---
 name: Immich Kiosk Gallery
-version: 0.0.1
+version: 0.0.2
 slug: immich-kiosk-gallery
 description: Addon to run Immich Kiosk Gallery for viewing photos and videos.
 url: https://github.com/Unlink/hassio_addons/addon-immich-kiosk-gallery
@@ -26,4 +26,4 @@ schema:
   immich_api_key: str
   immich_show_memories: bool
   immich_show_albums: bool
-  immich_albums: list(str)  
+  immich_albums: [str]  
