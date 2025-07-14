@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Immich Kiosk Gallery</title>
+  <link rel="stylesheet" href="/static/slideshow.css">
+</head>
+<body>
+  <div id="memories-label">Spomienky</div>
+  <div id="switcher" style="display:none;"></div>
+  <div id="slideshow-container">
+    <img id="slide-img" class="slide-image" src="" alt="Slideshow" style="display:none;" />
+  </div>
+  <div id="loading">Načítavam fotky...</div>
+  <script>
+    const switcher = document.getElementById('switcher');
+    const memoriesLabel = document.getElementById('memories-label');
+    const slideImg = document.getElementById('slide-img');
+    const loading = document.getElementById('loading');
+
+    let memories = [];
+    let randomPhotos = [];
+    let currentCollection = 'memories';
+    let slideshowPhotos = [];
+    let slideIndex = 0;
+    let slideTimer = null;
+    let availableCollections = [];
+
+    function showLoading(show) {
+      loading.style.display = show ? 'block' : 'none';
+    }
+
+    async function fetchCollection(url) {
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success) return data;
+        return { success: false, items: [] };
+      } catch {
+        return { success: false, items: [] };
+      }
+    }
+
+    async function loadPhotos() {
+      showLoading(true);
+      // Fetch both collections in parallel
+      const [memoriesRes, randomRes] = await Promise.all([
+        fetch('/api/memories').then(r => r.json()),
+        fetch('/api/randomPhotos').then(r => r.json())
+      ]);
+      memories = (memoriesRes.success && memoriesRes.memories && memoriesRes.memories.length) ? memoriesRes.memories : [];
+      randomPhotos = (randomRes.success && randomRes.photos && randomRes.photos.length) ? randomRes.photos : [];
+
+      availableCollections = [];
+      if (memories.length) availableCollections.push('memories');
+      if (randomPhotos.length) availableCollections.push('random');
+
+      // Set default collection
+      if (!availableCollections.includes(currentCollection)) {
+        currentCollection = availableCollections[0] || 'memories';
+      }
+
+      renderSwitcher();
+      updateSlideshowPhotos();
+      showLoading(false);
+      startSlideshow();
+    }
+
+    function renderSwitcher() {
+      if (availableCollections.length < 2) {
+        switcher.style.display = 'none';
+        return;
+      }
+      switcher.innerHTML = '';
+      if (availableCollections.includes('memories')) {
+        const label = document.createElement('label');
+        label.innerHTML = `<input type="radio" name="collection" value="memories" ${currentCollection==='memories'?'checked':''}>Spomienky`;
+        label.onclick = () => switchCollection('memories');
+        switcher.appendChild(label);
+      }
+      if (availableCollections.includes('random')) {
+        const label = document.createElement('label');
+        label.innerHTML = `<input type="radio" name="collection" value="random" ${currentCollection==='random'?'checked':''}>Náhodné fotky`;
+        label.onclick = () => switchCollection('random');
+        switcher.appendChild(label);
+      }
+      switcher.style.display = 'flex';
+    }
+
+    function switchCollection(col) {
+      if (col === currentCollection) return;
+      currentCollection = col;
+      updateSlideshowPhotos();
+      startSlideshow();
+    }
+
+    function updateSlideshowPhotos() {
+      if (currentCollection === 'memories') {
+        slideshowPhotos = memories;
+        memoriesLabel.classList.add('active');
+      } else {
+        slideshowPhotos = randomPhotos;
+        memoriesLabel.classList.remove('active');
+      }
+      slideIndex = 0;
+    }
+
+    function showSlide(idx) {
+      if (!slideshowPhotos.length) {
+        slideImg.style.display = 'none';
+        return;
+      }
+      const photo = slideshowPhotos[idx % slideshowPhotos.length];
+      slideImg.src = photo.full_image_url || photo.thumbnail_url;
+      slideImg.style.display = 'block';
+      slideImg.style.opacity = 0;
+      setTimeout(() => { slideImg.style.opacity = 1; }, 50);
+    }
+
+    function startSlideshow() {
+      if (slideTimer) clearInterval(slideTimer);
+      if (!slideshowPhotos.length) {
+        slideImg.style.display = 'none';
+        return;
+      }
+      showSlide(slideIndex);
+      slideTimer = setInterval(() => {
+        slideIndex = (slideIndex + 1) % slideshowPhotos.length;
+        showSlide(slideIndex);
+      }, 6000);
+    }
+
+    window.addEventListener('DOMContentLoaded', loadPhotos);
+  </script>
+</body>
+</html>
