@@ -210,29 +210,25 @@
       imgPreview.src = previewUrl;
       imgPreview.style.zIndex = 2;
       imgPreview.style.visibility = 'visible';
-      // Wait for preview to load
+      img.classList.remove('visible');
+      // Fade in preview
       imgPreview.onload = () => {
         imgPreview.style.transition = 'opacity 0.4s';
         imgPreview.style.opacity = 1;
-        // 2. Fade out current image
-        img.classList.remove('visible');
-        // 3. Wait for preview fade-in to finish, then load full image
-        setTimeout(() => {
-          // Hide the current image immediately to avoid flicker
-          img.src = '';
-          // Now load the new full image
-          img.onload = () => {
-            img.classList.add('visible');
-            imgPreview.style.opacity = 0;
-            setTimeout(() => {
-              imgPreview.style.visibility = 'hidden';
-              imgPreview.src = '';
-              isTransitioning = false;
-            }, 400);
-          };
-          img.src = url;
-          document.getElementById('caption').innerHTML = caption;
-        }, 400);
+        // 2. Hide current image immediately to avoid flicker
+        img.src = '';
+        // 3. Start loading full image in background
+        img.onload = () => {
+          img.classList.add('visible');
+          imgPreview.style.opacity = 0;
+          setTimeout(() => {
+            imgPreview.style.visibility = 'hidden';
+            imgPreview.src = '';
+            isTransitioning = false;
+          }, 400);
+        };
+        img.src = url;
+        document.getElementById('caption').innerHTML = caption;
       };
       // fallback if preview and full are the same
       if (previewUrl === url) {

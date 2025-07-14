@@ -272,7 +272,7 @@ def api_random_photos():
     
     try:
         # Get random photos from configured albums
-        random_photos = immich_client.get_random_photos_from_albums(album_names, count=20)
+        random_photos = immich_client.get_random_photos_from_albums(album_names, count=50)
         
         # Process photos to include URLs and metadata, including author and location
         processed_photos = []
