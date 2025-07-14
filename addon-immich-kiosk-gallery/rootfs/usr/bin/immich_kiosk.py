@@ -202,7 +202,7 @@ def api_memories():
         
         logger.info(f"Found {len(today_memories)} memories for today out of {len(memories)} total memories")
         
-        # Process memories to include URLs and metadata
+        # Process memories to include URLs and metadata, including author and location
         processed_memories = []
         for memory in today_memories:
             if memory.assets:
@@ -210,6 +210,8 @@ def api_memories():
                     if asset.is_archived or asset.type != 'IMAGE':
                         logger.debug(f"Skipping asset {asset.id} in memory {memory.id}")
                         continue
+                    # Get asset details from API (for author/location)
+                    asset_info = immich_client.get_asset_info(asset.id)
                     asset_data = {
                         'id': asset.id,
                         'type': asset.type,
@@ -219,7 +221,11 @@ def api_memories():
                         'updated_at': asset.updated_at,
                         'is_favorite': asset.is_favorite,
                         'thumbnail_url': f"/api/proxy/thumbnail/{asset.id}",
-                        'full_image_url': f"/api/proxy/image/{asset.id}"
+                        'full_image_url': f"/api/proxy/image/{asset.id}",
+                        'author': asset_info.author if asset_info else None,
+                        'city': asset_info.city if asset_info else None,
+                        'state': asset_info.state if asset_info else None,
+                        'country': asset_info.country if asset_info else None
                     }
                     processed_memories.append(asset_data)
         
@@ -268,9 +274,11 @@ def api_random_photos():
         # Get random photos from configured albums
         random_photos = immich_client.get_random_photos_from_albums(album_names, count=20)
         
-        # Process photos to include URLs and metadata
+        # Process photos to include URLs and metadata, including author and location
         processed_photos = []
         for photo in random_photos:
+            # Get asset details from API (for author/location)
+            asset_info = immich_client.get_asset_info(photo.id)
             photo_data = {
                 'id': photo.id,
                 'type': photo.type,
@@ -280,7 +288,11 @@ def api_random_photos():
                 'updated_at': photo.updated_at,
                 'is_favorite': photo.is_favorite,
                 'thumbnail_url': f"/api/proxy/thumbnail/{photo.id}",
-                'full_image_url': f"/api/proxy/image/{photo.id}"
+                'full_image_url': f"/api/proxy/image/{photo.id}",
+                'author': asset_info.author if asset_info else None,
+                'city': asset_info.city if asset_info else None,
+                'state': asset_info.state if asset_info else None,
+                'country': asset_info.country if asset_info else None
             }
             processed_photos.append(photo_data)
         

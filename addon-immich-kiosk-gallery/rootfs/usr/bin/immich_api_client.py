@@ -24,6 +24,10 @@ class Asset:
     is_favorite: bool = False
     is_archived: bool = False
     duration: Optional[str] = None
+    author: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
 
 @dataclass
 class Memory:
@@ -129,11 +133,19 @@ class ImmichAPIClient:
             return []
     
     def get_asset_info(self, asset_id: str) -> Optional[Asset]:
-        """Get detailed information about an asset"""
+        """Get detailed information about an asset, including author and location"""
         try:
             response = self.session.get(f"{self.base_url}/api/assets/{asset_id}", timeout=10)
             if response.status_code == 200:
                 asset_data = response.json()
+                # Author
+                owner = asset_data.get('owner', {})
+                author = owner.get('name') or owner.get('email')
+                # Location
+                exif = asset_data.get('exifInfo', {})
+                city = exif.get('city')
+                state = exif.get('state')
+                country = exif.get('country')
                 return Asset(
                     id=asset_data.get('id', ''),
                     type=asset_data.get('type', ''),
@@ -143,7 +155,11 @@ class ImmichAPIClient:
                     updated_at=asset_data.get('updatedAt'),
                     is_favorite=asset_data.get('isFavorite', False),
                     is_archived=asset_data.get('isArchived', False),
-                    duration=asset_data.get('duration')
+                    duration=asset_data.get('duration'),
+                    author=author,
+                    city=city,
+                    state=state,
+                    country=country
                 )
             return None
         except Exception as e:

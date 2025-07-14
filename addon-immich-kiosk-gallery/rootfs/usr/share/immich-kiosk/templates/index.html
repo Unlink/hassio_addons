@@ -12,7 +12,11 @@
   <div id="slideshow-container">
     <img id="slide-img" class="slide-image" src="" alt="Slideshow" style="display:none;" />
   </div>
-  <div id="photo-date"></div>
+  <div id="photo-meta">
+    <div id="photo-date"></div>
+    <div id="photo-author"></div>
+    <div id="photo-location"></div>
+  </div>
   <div id="loading">Načítavam fotky...</div>
   <script>
     const switcher = document.getElementById('switcher');
@@ -20,6 +24,8 @@
     const slideImg = document.getElementById('slide-img');
     const loading = document.getElementById('loading');
     const photoDate = document.getElementById('photo-date');
+    const photoAuthor = document.getElementById('photo-author');
+    const photoLocation = document.getElementById('photo-location');
 
     let memories = [];
     let randomPhotos = [];
@@ -112,6 +118,8 @@
       if (!slideshowPhotos.length) {
         slideImg.style.display = 'none';
         photoDate.style.display = 'none';
+        photoAuthor.style.display = 'none';
+        photoLocation.style.display = 'none';
         return;
       }
       const photo = slideshowPhotos[idx % slideshowPhotos.length];
@@ -135,7 +143,7 @@
         }
       }, 200);
 
-      // Show date in right bottom corner
+      // Show date
       let dateStr = '';
       if (photo.file_created_at) {
         const d = new Date(photo.file_created_at);
@@ -148,6 +156,26 @@
         photoDate.style.display = 'block';
       } else {
         photoDate.style.display = 'none';
+      }
+
+      // Show author
+      if (photo.author) {
+        photoAuthor.textContent = `Autor: ${photo.author}`;
+        photoAuthor.style.display = 'block';
+      } else {
+        photoAuthor.style.display = 'none';
+      }
+
+      // Show location
+      let loc = '';
+      if (photo.city) loc += photo.city;
+      if (photo.state) loc += (loc ? ', ' : '') + photo.state;
+      if (photo.country) loc += (loc ? ', ' : '') + photo.country;
+      if (loc) {
+        photoLocation.textContent = `Lokácia: ${loc}`;
+        photoLocation.style.display = 'block';
+      } else {
+        photoLocation.style.display = 'none';
       }
     }
 
