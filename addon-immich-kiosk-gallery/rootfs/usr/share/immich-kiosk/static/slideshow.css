@@ -25,16 +25,13 @@ html, body {
       z-index: 1;
     }
     .slide-img {
-      max-width: 100vw;
-      max-height: 100vh;
-      object-fit: contain;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
       object-position: center;
       display: block;
       background: #111;
       margin: 0 auto;
-    }
-    .swiper-pagination, .swiper-button-prev, .swiper-button-next {
-      z-index: 10;
     }
     .gallery-overlay {
       position: absolute;
@@ -43,22 +40,6 @@ html, body {
       width: 100vw;
       z-index: 30;
       pointer-events: none;
-    }
-    .photo-meta {
-      position: relative;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      background: rgba(0,0,0,0.5);
-      color: #fff;
-      border-radius: 0 0 8px 8px;
-      padding: 0.5em 1em;
-      font-size: 1.1em;
-      z-index: 32;
-      display: flex;
-      gap: 1em;
-      justify-content: flex-end;
-      pointer-events: auto;
     }
     .gallery-header {
       position: relative;
@@ -70,9 +51,25 @@ html, body {
       justify-content: flex-start;
       align-items: center;
       gap: 2vw;
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.25);
       padding: 0.5em 1em;
       box-sizing: border-box;
+      pointer-events: auto;
+    }
+    .photo-meta {
+      position: relative;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      background: rgba(0,0,0,0.18);
+      color: #fff;
+      border-radius: 0 0 8px 8px;
+      padding: 0.5em 1em;
+      font-size: 1.1em;
+      z-index: 32;
+      display: flex;
+      gap: 1em;
+      justify-content: flex-end;
       pointer-events: auto;
     }
     .memories-label {

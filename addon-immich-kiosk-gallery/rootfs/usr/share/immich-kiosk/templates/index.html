@@ -24,9 +24,6 @@
       </div>
       <div class="swiper">
         <div class="swiper-wrapper" id="swiper-wrapper"></div>
-        <div class="swiper-pagination"></div>
-        <div class="swiper-button-prev"></div>
-        <div class="swiper-button-next"></div>
       </div>
       <div id="loading" class="loading">Načítavam fotky...</div>
     </div>
@@ -163,22 +160,19 @@
       if (swiper) { swiper.destroy(true, true); swiper = null; }
       swiper = new Swiper('.swiper', {
         loop: true,
-        centeredSlides: true,
-        spaceBetween: 30,
-        effect: 'slide',
-        speed: 600,
-        keyboard: { enabled: true },
-        pagination: { el: '.swiper-pagination', clickable: true },
-        navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
-        preloadImages: false,
-        lazy: true,
-        lazyPreloadPrevNext: 2,
-        parallax: true,
+        effect: 'fade',
+        fadeEffect: { crossFade: true },
+        speed: 1200,
         autoplay: {
           delay: 6000,
           disableOnInteraction: false,
-          pauseOnMouseEnter: true
         },
+        allowTouchMove: false,
+        keyboard: false,
+        pagination: false,
+        navigation: false,
+        preloadImages: true,
+        lazy: false,
         on: {
           slideChange: function () {
             updateMeta(this.realIndex);
