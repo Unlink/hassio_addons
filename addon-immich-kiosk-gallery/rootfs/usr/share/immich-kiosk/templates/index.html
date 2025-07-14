@@ -169,12 +169,25 @@
     function setLoading(loading, text) {
       const indicator = document.getElementById('loading-indicator');
       const loadingText = document.getElementById('loading-text');
+      // Hide/show nav buttons and caption during loading
+      const prevBtn = document.getElementById('prev-btn');
+      const nextBtn = document.getElementById('next-btn');
+      const caption = document.getElementById('caption');
+      const switcher = document.getElementById('switcher');
       if (indicator) {
         if (loading) {
           indicator.style.display = 'flex';
           if (text && loadingText) loadingText.textContent = text;
+          if (prevBtn) prevBtn.style.visibility = 'hidden';
+          if (nextBtn) nextBtn.style.visibility = 'hidden';
+          if (caption) caption.style.visibility = 'hidden';
+          if (switcher) switcher.style.visibility = 'hidden';
         } else {
           indicator.style.display = 'none';
+          if (prevBtn) prevBtn.style.visibility = '';
+          if (nextBtn) nextBtn.style.visibility = '';
+          if (caption) caption.style.visibility = '';
+          if (switcher) switcher.style.visibility = 'hidden';
         }
       }
     }
