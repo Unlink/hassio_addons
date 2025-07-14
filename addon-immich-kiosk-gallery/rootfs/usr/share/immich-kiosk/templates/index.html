@@ -4,191 +4,143 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Immich Kiosk Gallery</title>
-  <link rel="stylesheet" href="/static/slideshow.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
 <body>
-  <main>
-    <div id="slideshow" class="slideshow">
-      <div class="gallery-overlay">
-        <header class="gallery-header">
-          <div id="collection-switcher" class="collection-switcher"></div>
-          <div id="memories-label" class="memories-label">Spomienky</div>
-        </header>
-        <div id="photo-meta" class="photo-meta">
-          <span id="photo-date"></span>
-          <span id="photo-author"></span>
-          <span id="photo-location"></span>
-          <span id="photo-index"></span>
-        </div>
-      </div>
-      <div class="swiper">
-        <div class="swiper-wrapper" id="swiper-wrapper"></div>
-      </div>
-      <div id="loading" class="loading">Načítavam fotky...</div>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    #gallery-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+    }
+    #image-frame {
+      max-width: 90vw;
+      max-height: 80vh;
+      box-shadow: 0 0 40px #000a;
+      border-radius: 16px;
+      background: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    #image-frame img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 16px;
+      transition: opacity 0.7s;
+      background: #222;
+    }
+    #switcher {
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 1rem;
+    }
+    .switch-btn {
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1.5rem;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .switch-btn.active {
+      background: #1976d2;
+    }
+    #caption {
+      margin-top: 0.5rem;
+      color: #ccc;
+      font-size: 1rem;
+      min-height: 1.5em;
+      text-align: center;
+    }
+  </style>
+  <div id="gallery-container">
+    <div id="switcher">
+      <button class="switch-btn active" id="memories-btn">Memories</button>
+      <button class="switch-btn" id="random-btn">Random</button>
     </div>
-  </main>
-  <!-- Swiper JS -->
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <div id="image-frame">
+      <img id="gallery-img" src="" alt="Gallery image" style="opacity:0;" />
+    </div>
+    <div id="caption"></div>
+  </div>
   <script>
-    // --- Immich Kiosk Gallery Swiper ---
-    const switcher = document.getElementById('collection-switcher');
-    const memoriesLabel = document.getElementById('memories-label');
-    const loading = document.getElementById('loading');
-    const photoDate = document.getElementById('photo-date');
-    const photoAuthor = document.getElementById('photo-author');
-    const photoLocation = document.getElementById('photo-location');
-    const photoIndex = document.getElementById('photo-index');
-    const swiperWrapper = document.getElementById('swiper-wrapper');
-
     let collections = { memories: [], random: [] };
     let currentCollection = 'memories';
-    let swiper = null;
-
-    function showLoading(show) {
-      loading.style.display = show ? 'block' : 'none';
-    }
+    let currentIndex = 0;
+    let slideshowInterval = null;
+    const SLIDESHOW_DELAY = 8000; // ms
 
     async function fetchCollections() {
-      showLoading(true);
       const [memoriesRes, randomRes] = await Promise.all([
         fetch('/api/memories').then(r => r.json()),
         fetch('/api/randomPhotos').then(r => r.json())
       ]);
       collections.memories = (memoriesRes.success && memoriesRes.memories) ? memoriesRes.memories : [];
       collections.random = (randomRes.success && randomRes.photos) ? randomRes.photos : [];
-      showLoading(false);
     }
 
-    function availableCollections() {
-      return Object.entries(collections)
-        .filter(([k, v]) => Array.isArray(v) && v.length)
-        .map(([k]) => k);
-    }
-
-    function renderSwitcher() {
-      const avail = availableCollections();
-      if (avail.length < 2) {
-        switcher.style.display = 'none';
+    function showImage(index) {
+      const images = collections[currentCollection];
+      if (!images || images.length === 0) {
+        document.getElementById('gallery-img').style.opacity = 0;
+        document.getElementById('gallery-img').src = '';
+        document.getElementById('caption').textContent = 'No images.';
         return;
       }
-      switcher.innerHTML = '';
-      avail.forEach(col => {
-        const label = document.createElement('label');
-        label.className = 'switch-label';
-        label.innerHTML = `<input type=\"radio\" name=\"collection\" value=\"${col}\" ${currentCollection===col?'checked':''}>${col==='memories'?'Spomienky':'Náhodné fotky'}`;
-        label.onclick = () => switchCollection(col);
-        switcher.appendChild(label);
-      });
-      switcher.style.display = 'flex';
+      currentIndex = (index + images.length) % images.length;
+      const imgData = images[currentIndex];
+      const img = document.getElementById('gallery-img');
+      img.style.opacity = 0;
+      // Support both string and object with url/caption
+      let url = typeof imgData === 'string' ? imgData : imgData.url;
+      let caption = typeof imgData === 'string' ? '' : (imgData.caption || '');
+      img.onload = () => { img.style.opacity = 1; };
+      img.src = url;
+      document.getElementById('caption').textContent = caption;
     }
 
-    function switchCollection(col) {
-      if (col === currentCollection) return;
-      currentCollection = col;
-      updateMemoriesLabel();
-      renderSlides();
-      initSwiper();
+    function startSlideshow() {
+      if (slideshowInterval) clearInterval(slideshowInterval);
+      slideshowInterval = setInterval(() => {
+        showImage(currentIndex + 1);
+      }, SLIDESHOW_DELAY);
     }
 
-    function updateMemoriesLabel() {
-      if (currentCollection === 'memories') {
-        memoriesLabel.classList.add('active');
-        memoriesLabel.style.display = 'block';
-      } else {
-        memoriesLabel.classList.remove('active');
-        memoriesLabel.style.display = 'none';
-      }
-    }
-
-    function getCurrentPhotos() {
-      return collections[currentCollection] || [];
-    }
-
-    function renderSlides() {
-      const photos = getCurrentPhotos();
-      swiperWrapper.innerHTML = '';
-      photos.forEach((photo, idx) => {
-        const slide = document.createElement('div');
-        slide.className = 'swiper-slide';
-        slide.innerHTML = `
-          <div class="slide-img-container">
-            <img class="slide-img" src="${photo.full_image_url || photo.thumbnail_url}" data-thumb="${photo.thumbnail_url || ''}" alt="${photo.file_name || ''}" />
-          </div>
-        `;
-        swiperWrapper.appendChild(slide);
-      });
-    }
-
-    function updateMeta(idx) {
-      const photos = getCurrentPhotos();
-      if (!photos.length) {
-        [photoDate, photoAuthor, photoLocation, photoIndex].forEach(el => el.style.display = 'none');
-        return;
-      }
-      const photo = photos[idx % photos.length];
-      // Date
-      let dateStr = '';
-      if (photo.file_created_at) {
-        const d = new Date(photo.file_created_at);
-        if (!isNaN(d.getTime())) {
-          dateStr = d.toLocaleDateString('sk-SK', { year: 'numeric', month: 'long', day: 'numeric' });
-        }
-      }
-      photoDate.textContent = dateStr;
-      photoDate.style.display = dateStr ? 'inline' : 'none';
-      // Author
-      photoAuthor.textContent = photo.author ? `Autor: ${photo.author}` : '';
-      photoAuthor.style.display = photo.author ? 'inline' : 'none';
-      // Location
-      let loc = '';
-      if (photo.city) loc += photo.city;
-      if (photo.state) loc += (loc ? ', ' : '') + photo.state;
-      if (photo.country) loc += (loc ? ', ' : '') + photo.country;
-      photoLocation.textContent = loc ? `Lokácia: ${loc}` : '';
-      photoLocation.style.display = loc ? 'inline' : 'none';
-      // Index
-      if (photos.length > 1) {
-        photoIndex.textContent = `${(idx % photos.length) + 1} / ${photos.length}`;
-        photoIndex.style.display = 'inline';
-      } else {
-        photoIndex.style.display = 'none';
-      }
-    }
-
-    function initSwiper() {
-      if (swiper) { swiper.destroy(true, true); swiper = null; }
-      swiper = new Swiper('.swiper', {
-        loop: true,
-        effect: 'fade',
-        fadeEffect: { crossFade: true },
-        speed: 1200,
-        autoplay: {
-          delay: 6000,
-          disableOnInteraction: false,
-        },
-        allowTouchMove: false,
-        keyboard: false,
-        pagination: false,
-        navigation: false,
-        preloadImages: true,
-        lazy: false,
-        on: {
-          slideChange: function () {
-            updateMeta(this.realIndex);
-          },
-        },
-      });
-      updateMeta(swiper.realIndex || 0);
+    function switchCollection(collection) {
+      if (currentCollection === collection) return;
+      currentCollection = collection;
+      document.getElementById('memories-btn').classList.toggle('active', collection === 'memories');
+      document.getElementById('random-btn').classList.toggle('active', collection === 'random');
+      currentIndex = 0;
+      showImage(0);
+      startSlideshow();
     }
 
     // --- Init ---
     async function initGallery() {
       await fetchCollections();
-      renderSwitcher();
-      updateMemoriesLabel();
-      renderSlides();
-      initSwiper();
+      showImage(0);
+      startSlideshow();
+      document.getElementById('memories-btn').onclick = () => switchCollection('memories');
+      document.getElementById('random-btn').onclick = () => switchCollection('random');
     }
     window.addEventListener('DOMContentLoaded', initGallery);
   </script>
