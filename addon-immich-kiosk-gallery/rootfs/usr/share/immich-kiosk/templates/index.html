@@ -33,6 +33,28 @@
                     <span class="status-indicator"></span>
                     Server beží na porte 8456
                 </div>
+
+                <div class="immich-section">
+                    <h3>📸 Immich Pripojenie</h3>
+                    <div id="immich-status" class="loading">Kontrolujem pripojenie...</div>
+                    
+                    <div id="memories-section" style="display: none;">
+                        <h4>🎞️ Memories Slideshow</h4>
+                        <p>Zobrazujú sa len memories, ktoré majú byť aktuálne viditeľné podľa showAt/hideAt nastavení.</p>
+                        <button id="load-memories" class="btn">Načítať Memories</button>
+                        <div id="memories-container"></div>
+                        
+                        <div class="slideshow-help" style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                            <strong>Ovládanie slideshow:</strong><br>
+                            • ▶️/⏸️ tlačidlo - spustenie/zastavenie automatického slideshow<br>
+                            • ◀️/▶️ tlačidlá - manuálne prepínanie<br>
+                            • Klávesy ←/→ - prepínanie klávesnicou<br>
+                            • Medzerník - spustenie/zastavenie slideshow<br>
+                            • Escape - zastavenie slideshow<br>
+                            • Kliknutie na miniatúry - skok na konkrétny obrázok
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 
