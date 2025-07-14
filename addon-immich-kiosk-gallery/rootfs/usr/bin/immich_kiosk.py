@@ -205,7 +205,6 @@ def api_memories():
         # Process memories to include URLs and metadata
         processed_memories = []
         for memory in today_memories:
-            memory_assets = []
             if memory.assets:
                 for asset in memory.assets:
                     asset_data = {
@@ -221,18 +220,7 @@ def api_memories():
                         'thumbnail_url': f"/api/proxy/thumbnail/{asset.id}",
                         'full_image_url': f"/api/proxy/image/{asset.id}"
                     }
-                    memory_assets.append(asset_data)
-            
-            memory_data = {
-                'id': memory.id,
-                'type': memory.type,
-                'show_at': memory.show_at,
-                'hide_at': memory.hide_at,
-                'data': memory.data,
-                'assets_count': len(memory_assets),
-                'assets': memory_assets
-            }
-            processed_memories.append(memory_data)
+                    processed_memories.append(asset_data)
         
         return jsonify({
             'success': True,
@@ -240,7 +228,6 @@ def api_memories():
             'count': len(processed_memories),
             'total_memories': len(memories),
             'current_time': current_time.isoformat(),
-            'message': f"Found {len(processed_memories)} memories for today"
         })
         
     except Exception as e:
