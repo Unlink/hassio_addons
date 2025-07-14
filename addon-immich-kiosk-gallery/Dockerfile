@@ -9,19 +9,20 @@ COPY rootfs /
 # Set execute permissions for s6-overlay scripts and binaries
 RUN chmod +x /etc/s6-overlay/s6-rc.d/immich-kiosk/run && \
     chmod +x /etc/s6-overlay/s6-rc.d/immich-kiosk/finish && \
+    chmod +x /etc/s6-overlay/s6-rc.d/init-immich-kiosk/run && \
     chmod +x /usr/bin/immich_kiosk.py
 
 # Setup base packages
 RUN apk add --no-cache \
-    coreutils=9.7-r1 \
-    python3=3.12.8-r1 \
-    py3-pip=24.3.1-r0 \
-    py3-flask=3.0.3-r1 \
-    py3-requests=2.32.3-r0
+    coreutils \
+    python3 \
+    py3-pip \
+    py3-flask \
+    py3-requests
 
 # Install additional Python packages
 RUN pip3 install --no-cache-dir \
-    flask-cors==4.0.0
+    flask-cors
 
 # Build arguments
 ARG BUILD_ARCH
