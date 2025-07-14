@@ -130,6 +130,17 @@
       <button class="switch-btn" id="random-btn">Random</button>
     </div>
     <div id="image-frame">
+      <div id="loading-indicator" style="position:absolute;inset:0;z-index:100;display:none;align-items:center;justify-content:center;pointer-events:none;">
+        <div style="background:rgba(0,0,0,0.5);border-radius:2em;padding:1.2em 2em;box-shadow:0 2px 16px #000a;display:flex;flex-direction:column;align-items:center;gap:0.7em;">
+          <svg width="40" height="40" viewBox="0 0 40 40" style="display:block;">
+            <circle cx="20" cy="20" r="16" stroke="#fff" stroke-width="4" fill="none" opacity="0.2"/>
+            <circle cx="20" cy="20" r="16" stroke="#fff" stroke-width="4" fill="none" stroke-dasharray="100" stroke-dashoffset="60" stroke-linecap="round">
+              <animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="1s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <span id="loading-text" style="color:#fff;font-size:1.1em;">Načítavam fotku…</span>
+        </div>
+      </div>
       <button id="prev-btn" class="nav-btn" aria-label="Previous photo">
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="14" cy="14" r="13" fill="rgba(40,40,40,0.6)" stroke="#fff" stroke-width="1.2"/>
@@ -154,6 +165,19 @@
     let currentIndex = 0;
     let slideshowInterval = null;
     const SLIDESHOW_DELAY = 8000; // ms
+
+    function setLoading(loading, text) {
+      const indicator = document.getElementById('loading-indicator');
+      const loadingText = document.getElementById('loading-text');
+      if (indicator) {
+        if (loading) {
+          indicator.style.display = 'flex';
+          if (text && loadingText) loadingText.textContent = text;
+        } else {
+          indicator.style.display = 'none';
+        }
+      }
+    }
 
     async function fetchCollections() {
       setLoading(true, 'Načítavam galériu…');
