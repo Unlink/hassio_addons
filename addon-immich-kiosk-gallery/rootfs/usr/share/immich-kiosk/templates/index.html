@@ -10,7 +10,9 @@
   <div id="memories-label">Spomienky</div>
   <div id="switcher" style="display:none;"></div>
   <div id="slideshow-container">
+    <img id="slide-img-prev" class="slide-image" src="" alt="Previous" style="display:none;" />
     <img id="slide-img" class="slide-image" src="" alt="Slideshow" style="display:none;" />
+    <img id="slide-img-preview" class="slide-image" src="" alt="Preview" style="display:none; filter: blur(2px) brightness(0.8); z-index:0;" />
   </div>
   <div id="photo-meta">
     <div id="photo-date"></div>
@@ -23,6 +25,8 @@
     const switcher = document.getElementById('switcher');
     const memoriesLabel = document.getElementById('memories-label');
     const slideImg = document.getElementById('slide-img');
+    const slideImgPrev = document.getElementById('slide-img-prev');
+    const slideImgPreview = document.getElementById('slide-img-preview');
     const loading = document.getElementById('loading');
     const photoDate = document.getElementById('photo-date');
     const photoAuthor = document.getElementById('photo-author');
@@ -116,9 +120,25 @@
       slideIndex = 0;
     }
 
+    // Preload cache for full images
+    const preloadCache = {};
+
+    function preloadImage(url) {
+      if (!url || preloadCache[url]) return;
+      const img = new window.Image();
+      img.src = url;
+      preloadCache[url] = img;
+    }
+
+
+    // Helper for slide direction
+    let lastSlideIndex = 0;
+
     function showSlide(idx) {
       if (!slideshowPhotos.length) {
         slideImg.style.display = 'none';
+        slideImgPreview.style.display = 'none';
+        slideImgPrev.style.display = 'none';
         photoDate.style.display = 'none';
         photoAuthor.style.display = 'none';
         photoLocation.style.display = 'none';
@@ -126,25 +146,55 @@
         return;
       }
       const photo = slideshowPhotos[idx % slideshowPhotos.length];
+      const prevPhoto = slideshowPhotos[lastSlideIndex % slideshowPhotos.length];
+      const direction = idx > lastSlideIndex || (idx === 0 && lastSlideIndex === slideshowPhotos.length - 1) ? 'right' : 'left';
 
-      // Fade out current image
-      slideImg.classList.remove('fade-in');
-      slideImg.classList.add('fade-out');
+      // Prepare previous image for slide-out
+      slideImgPrev.src = slideImg.src;
+      slideImgPrev.style.display = slideImg.src ? 'block' : 'none';
+      slideImgPrev.className = 'slide-image slide-center';
 
-      setTimeout(() => {
-        slideImg.src = photo.full_image_url || photo.thumbnail_url;
-        slideImg.style.display = 'block';
-        // After image loads, fade in
-        slideImg.onload = () => {
-          slideImg.classList.remove('fade-out');
-          slideImg.classList.add('fade-in');
-        };
-        // If cached, trigger fade-in immediately
-        if (slideImg.complete) {
-          slideImg.classList.remove('fade-out');
-          slideImg.classList.add('fade-in');
+      // Show preview first
+      slideImgPreview.src = photo.thumbnail_url || '';
+      slideImgPreview.style.display = photo.thumbnail_url ? 'block' : 'none';
+
+      // Prepare new image for slide-in
+      slideImg.className = 'slide-image ' + (direction === 'right' ? 'slide-in-right' : 'slide-in-left');
+      slideImg.style.display = 'block';
+      slideImg.src = photo.full_image_url || photo.thumbnail_url;
+
+      // After full image loads, animate slide
+      slideImg.onload = () => {
+        slideImgPreview.style.display = 'none';
+        // Animate
+        setTimeout(() => {
+          slideImg.className = 'slide-image slide-center';
+          slideImgPrev.className = 'slide-image ' + (direction === 'right' ? 'slide-out-left' : 'slide-out-right');
+        }, 30);
+        setTimeout(() => {
+          slideImgPrev.style.display = 'none';
+        }, 600);
+      };
+      // If cached, trigger animation immediately
+      if (slideImg.complete) {
+        slideImgPreview.style.display = 'none';
+        setTimeout(() => {
+          slideImg.className = 'slide-image slide-center';
+          slideImgPrev.className = 'slide-image ' + (direction === 'right' ? 'slide-out-left' : 'slide-out-right');
+        }, 30);
+        setTimeout(() => {
+          slideImgPrev.style.display = 'none';
+        }, 600);
+      }
+
+      // Preload next image
+      if (slideshowPhotos.length > 1) {
+        const nextIdx = (idx + 1) % slideshowPhotos.length;
+        const nextPhoto = slideshowPhotos[nextIdx];
+        if (nextPhoto && nextPhoto.full_image_url) {
+          preloadImage(nextPhoto.full_image_url);
         }
-      }, 200);
+      }
 
       // Show date
       let dateStr = '';
@@ -188,6 +238,8 @@
       } else {
         photoIndex.style.display = 'none';
       }
+
+      lastSlideIndex = idx;
     }
     // Mouse swipe support
     let mouseDown = false;
