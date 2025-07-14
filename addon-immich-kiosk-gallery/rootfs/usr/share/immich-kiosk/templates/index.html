@@ -222,19 +222,19 @@
         imgPreview.style.opacity = 1;
         
         //Unfade old preview
-        imgPreviewOld.style.zIndex = 1;
+        imgPreviewOld.style.z-index = 1;
         imgPreviewOld.style.opacity = 0;
 
         //Hide current image
         img.src = '';
         img.style.transition = 'none';
         img.style.opacity = 0;
-        img.zIndex = 1;
+        img.style.zIndex = 1;
 
         // 3. Start loading full image in background
         img.onload = () => {
           img.style.opacity = 1;
-          img.zIndex = 3;
+          img.style.zIndex = 3;
           imgPreview.zIndex = 2;
           isTransitioning = false;
         };
