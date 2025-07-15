@@ -112,17 +112,28 @@ def proxy_full_image(asset_id):
     
     try:
         # Get full-size image stream from API client
-        response_stream, content_type = immich_client.get_asset_full_image_stream(asset_id)
+        # response_stream, content_type = immich_client.get_asset_full_image_stream(asset_id)
         
-        if response_stream is not None:
-            def generate():
-                for chunk in response_stream.iter_content(chunk_size=8192):
-                    yield chunk
+        # if response_stream is not None:
+        #     def generate():
+        #         for chunk in response_stream.iter_content(chunk_size=8192):
+        #             yield chunk
             
-            proxy_response = Response(generate(), mimetype=content_type)
-            proxy_response.headers['Cache-Control'] = 'public, max-age=3600'
-            proxy_response.headers['X-Proxy-Source'] = 'immich-kiosk'
-            return proxy_response
+        #     proxy_response = Response(generate(), mimetype=content_type)
+        #     proxy_response.headers['Cache-Control'] = 'public, max-age=3600'
+        #     proxy_response.headers['X-Proxy-Source'] = 'immich-kiosk'
+        #     return proxy_response
+        # else:
+        #     return jsonify({'error': 'Image not found'}), 404
+
+        image_data_obj = immich_client.get_asset_image_data(asset_id, 'preview')
+        
+        if image_data_obj is not None:
+            response = Response(image_data_obj.content, mimetype=image_data_obj.content_type)
+            # Add cache headers
+            response.headers['Cache-Control'] = 'public, max-age=3600'  # Cache for 1 hour
+            response.headers['X-Proxy-Source'] = 'immich-kiosk'
+            return response
         else:
             return jsonify({'error': 'Image not found'}), 404
             
