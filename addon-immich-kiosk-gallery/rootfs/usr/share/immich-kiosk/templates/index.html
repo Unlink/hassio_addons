@@ -51,7 +51,7 @@
       pointer-events: none;
       user-select: none;
       opacity: 0;
-      transition: opacity 0.4s cubic-bezier(.4,0,.2,1);
+      transition: opacity 1.4s cubic-bezier(.4,0,.2,1);
     }
 
 
@@ -96,7 +96,7 @@
       box-shadow: 0 2px 16px #000a;
       pointer-events: none;
       user-select: none;
-      max-width: 90vw;
+      max-width: 95vw;
       white-space: pre-line;
     }
 
@@ -260,7 +260,7 @@
       // Fade in new preview
       imgPreview.onload = () => {
         //Show new preview
-        imgPreview.style.transition = 'opacity 0.4s';
+        imgPreview.style.transition = 'opacity 1.4s';
         imgPreview.style.opacity = 1;
         
         //Unfade old preview
